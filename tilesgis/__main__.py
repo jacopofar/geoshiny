@@ -2,12 +2,15 @@ from dataclasses import asdict, dataclass, field, is_dataclass
 from enum import Enum
 import logging
 from json import JSONEncoder
-from typing import Dict, List, Tuple
+import random
+from typing import Dict, List, Optional, Tuple
 from xml.dom.minidom import parse
 
 from osgeo import gdal
 from osgeo import osr
 import numpy as np
+from PIL import Image, ImageDraw
+
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -18,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ExtendDegrees:
+class ExtentDegrees:
     """Bounding box in WGS84 degrees."""
     latmin: float
     latmax: float
@@ -31,14 +34,14 @@ class OSMNode:
     """OSM Node object."""
     lat: float
     lon: float
-    attributes: Dict[str, str] = None
+    attributes: Optional[Dict[str, str]] = None
 
 
 @dataclass
 class OSMWay:
     """OSM Way object."""
     nodes: List[int] = field(default_factory=list)
-    attributes: Dict[str, str] = None
+    attributes: Optional[Dict[str, str]] = None
 
 
 class RelMemberType(Enum):
@@ -50,7 +53,7 @@ class RelMemberType(Enum):
 class OSMRelation:
     """OSM Relation object."""
     members: List[Tuple[RelMemberType, int, str]] = field(default_factory=list)
-    attributes: Dict[str, str] = None
+    attributes: Optional[Dict[str, str]] = None
 
 
 @dataclass
@@ -61,10 +64,18 @@ class AreaData:
     relations: Dict[int, OSMRelation] = field(default_factory=dict)
 
 
-def xmlToMapObj(fname: str) -> AreaData:
+def xml_to_map_obj(fname: str) -> Tuple[AreaData, ExtentDegrees]:
     """Parse an XML from OSM into an area data object."""
     ret = AreaData()
     dom = parse(fname)
+    # get the extent
+    bnd = dom.getElementsByTagName('bounds')[0]
+    extent = ExtentDegrees(
+        latmin=float(bnd.getAttribute('minlat')),
+        latmax=float(bnd.getAttribute('maxlat')),
+        lonmin=float(bnd.getAttribute('minlon')),
+        lonmax=float(bnd.getAttribute('maxlon'))
+    )
     # extract the nodes
     for n in dom.getElementsByTagName('node'):
         newNode = OSMNode(
@@ -84,11 +95,11 @@ def xmlToMapObj(fname: str) -> AreaData:
         newWay = OSMWay()
         for nd in w.getElementsByTagName('nd'):
             newWay.nodes.append(int(nd.getAttribute('ref')))
-        for tag in n.getElementsByTagName('tag'):
+        for tag in w.getElementsByTagName('tag'):
             if newWay.attributes is None:
                 newWay.attributes = {}
             newWay.attributes[tag.getAttribute('k')] = tag.getAttribute('v')
-        ret.ways[int(n.getAttribute('id'))] = newWay
+        ret.ways[int(w.getAttribute('id'))] = newWay
 
     # finally, the relations
     for rel in dom.getElementsByTagName('relation'):
@@ -104,10 +115,11 @@ def xmlToMapObj(fname: str) -> AreaData:
                 newRel.attributes = {}
             newRel.attributes[tag.getAttribute('k')] = tag.getAttribute('v')
         ret.relations[int(n.getAttribute('id'))] = newRel
-    return ret
+
+    return ret, extent
 
 
-def saveToGeoTIFF(bbox: ExtendDegrees, image: np.ndarray, fname: str):
+def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
     nx, ny = image.shape[:2]
     # this is because the image is distorted if not square
     assert nx == ny
@@ -121,10 +133,55 @@ def saveToGeoTIFF(bbox: ExtendDegrees, image: np.ndarray, fname: str):
     srs.ImportFromEPSG(4326)                # WGS84 lat/long (in degrees)
     dst_ds.SetGeoTransform(geotransform)    # specify coords
     dst_ds.SetProjection(srs.ExportToWkt())  # export coords to the file
-    dst_ds.GetRasterBand(1).WriteArray(image[:, :, 0])   # write r-band to the raster
-    dst_ds.GetRasterBand(2).WriteArray(image[:, :, 1])   # write g-band to the raster
-    dst_ds.GetRasterBand(3).WriteArray(image[:, :, 2])   # write b-band to the raster
+    # image uses cartesian coordinates, swap to graphics coordinates
+    # which means to invert Y axis
+    img = np.flip(image, (0))
+    dst_ds.GetRasterBand(1).WriteArray(img[:, :,  0])
+    dst_ds.GetRasterBand(2).WriteArray(img[:, :,  1])
+    dst_ds.GetRasterBand(3).WriteArray(img[:, :,  2])
     dst_ds.FlushCache()
+
+
+def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: ExtentDegrees) -> Tuple[float, float]:
+    """Convert lat/lon coordinate to a pixel coordinate for a given area.
+
+    NOTE: this assumes the extent is very small, enough to not introduce errors
+    due to curvature. For this project is usually no bigger than a few blocks,
+    but a city should be fine too.
+    """
+    x = (lon - extent.lonmin) * width / (extent.lonmax - extent.lonmin)
+    y = (lat - extent.latmin) * height / (extent.latmax - extent.latmin)
+
+    return x, y
+
+
+def asphalt_map(data: AreaData, extent: ExtentDegrees) -> np.ndarray:
+    """Calculate the image with ways within the given extent."""
+    img = Image.new('RGB', (800, 800), (0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    asphalt_ways = []
+    for w in data.ways.values():
+        if w.attributes is None:
+            continue
+        if w.attributes.get('surface') == 'asphalt':
+            asphalt_ways.append(w.nodes)
+
+    for way in asphalt_ways:
+        red = random.randint(1, 250)
+        green = random.randint(1, 250)
+        blue = random.randint(1, 250)
+        for id1, id2 in zip(way, way[1:]):
+            n1 = data.nodes.get(id1)
+            n2 = data.nodes.get(id2)
+            if n1 is None or n2 is None:
+                continue
+            # now n1 and n2 are two nodes connected by asphalt
+            x1, y1 = coord_to_pixel(n1.lat, n1.lon, img.size[0], img.size[1], extent)
+            x2, y2 = coord_to_pixel(n2.lat, n2.lon, img.size[0], img.size[1], extent)
+            draw.line((x1, y1, x2, y2), fill=(red, green, blue))
+
+    return np.array(img)
 
 
 class EnhancedJSONEncoder(JSONEncoder):
@@ -137,18 +194,22 @@ class EnhancedJSONEncoder(JSONEncoder):
 
 
 if __name__ == '__main__':
-    d = xmlToMapObj('milano_bicocca.osm')
-    import json
-    with open('bicocca.json', 'w') as fw:
-        fw.write(json.dumps(d, indent=2, cls=EnhancedJSONEncoder))
-    exit(2)
+    osm_fname = 'zone.osm'
+    d, e = xml_to_map_obj(osm_fname)
+    img = asphalt_map(d, e)
 
-    from random import randint
-    image = np.zeros((10, 30, 3), dtype=np.uint8)
-    for x in range(0, image.shape[0]):
-        for y in range(0, image.shape[1]):
-            image[x][y][0] = randint(1, 255)
-            image[x][y][1] = randint(1, 255)
-            image[x][y][2] = randint(1, 255)
-    # coordinates for the Bresso airport landing strip, used here as a reference
-    saveToGeoTIFF(ExtendDegrees(45.5331, 45.5465, 9.1986, 9.2056), image, 'newFile.tif')
+    save_to_geoTIFF(e, img, osm_fname + '.asphalt.tif')
+
+    # import json
+    # with open(osm_fname + '.json', 'w') as fw:
+    #     fw.write(json.dumps(d, indent=2, cls=EnhancedJSONEncoder))
+
+    # from random import randint
+    # image = np.zeros((10, 30, 3), dtype=np.uint8)
+    # for x in range(0, image.shape[0]):
+    #     for y in range(0, image.shape[1]):
+    #         image[x][y][0] = randint(1, 255)
+    #         image[x][y][1] = randint(1, 255)
+    #         image[x][y][2] = randint(1, 255)
+    # # coordinates for the Bresso airport landing strip, used here as a reference
+    # save_to_geoTIFF(ExtentDegrees(45.5331, 45.5465, 9.1986, 9.2056), image, 'newFile.tif')
