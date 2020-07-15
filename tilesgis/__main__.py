@@ -114,7 +114,7 @@ def xml_to_map_obj(fname: str) -> Tuple[AreaData, ExtentDegrees]:
             if newRel.attributes is None:
                 newRel.attributes = {}
             newRel.attributes[tag.getAttribute('k')] = tag.getAttribute('v')
-        ret.relations[int(n.getAttribute('id'))] = newRel
+        ret.relations[int(rel.getAttribute('id'))] = newRel
 
     return ret, extent
 
@@ -194,7 +194,7 @@ class EnhancedJSONEncoder(JSONEncoder):
 
 
 if __name__ == '__main__':
-    osm_fname = 'zone.osm'
+    osm_fname = 'map.osm'
     d, e = xml_to_map_obj(osm_fname)
     img = asphalt_map(d, e)
 
