@@ -11,6 +11,33 @@ class ExtentDegrees:
     lonmin: float
     lonmax: float
 
+    def enlarged(self, factor: float):
+        """Calculate an extent larger in all directions.
+
+        Parameters
+        ----------
+        factor : float
+            How much to enlarge, e.g. 0.1 means 10% more
+        """
+        lat_mid = (self.latmax + self.latmin) / 2
+        lat_radius = abs(self.latmax - self.latmin) / 2 * (1 + factor)
+        lon_mid = (self.lonmax + self.lonmin) / 2
+        lon_radius = abs(self.lonmax - self.lonmin) / 2 * (1 + factor)
+        return ExtentDegrees(
+            latmin=min(lat_mid - lat_radius, lat_mid + lat_radius),
+            latmax=max(lat_mid - lat_radius, lat_mid + lat_radius),
+            lonmin=min(lon_mid - lon_radius, lon_mid + lon_radius),
+            lonmax=max(lon_mid - lon_radius, lon_mid + lon_radius),
+        )
+
+    def as_e7_dict(self):
+        return dict(
+            latmin=int(self.latmin * 10 ** 7),
+            latmax=int(self.latmax * 10 ** 7),
+            lonmin=int(self.lonmin * 10 ** 7),
+            lonmax=int(self.lonmax * 10 ** 7),
+        )
+
 
 @dataclass
 class OSMNode:

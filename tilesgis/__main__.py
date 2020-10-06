@@ -81,7 +81,7 @@ def asphalt_map(data: AreaData, extent: ExtentDegrees) -> np.ndarray:
             # now n1 and n2 are two nodes connected by asphalt
             x1, y1 = coord_to_pixel(n1.lat, n1.lon, img.size[0], img.size[1], extent)
             x2, y2 = coord_to_pixel(n2.lat, n2.lon, img.size[0], img.size[1], extent)
-            draw.line((x1, y1, x2, y2), fill=(red, green, blue))
+            draw.line((x1, y1, x2, y2), fill=(red, green, blue))  # type: ignore
 
     return np.array(img)
 
@@ -90,5 +90,4 @@ if __name__ == '__main__':
     for osm_name in ['new_york_park.osm', 'sample.osm']:
         d, e = xml_to_map_obj(osm_name)
         img = asphalt_map(d, e)
-
         save_to_geoTIFF(e, img, osm_name + '.asphalt.tif')
