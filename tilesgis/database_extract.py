@@ -1,10 +1,10 @@
 from os import environ
-from typing import Dict
+from typing import Dict, List
 
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from tilesgis.types import OSMNode, ExtentDegrees
+from tilesgis.types import OSMNode, ExtentDegrees, OSMWay
 
 # TODO now it opens a connection every time, but here it's not a problem
 
@@ -12,6 +12,9 @@ from tilesgis.types import OSMNode, ExtentDegrees
 def _get_connection():
     return psycopg2.connect(dsn=environ['PGIS_CONN_STR'])
 
+
+# TODO once the code to get ways is ready, nodes can be retrieved from ways
+# without the margin workaround
 
 def nodes_in_extent(extent: ExtentDegrees, margin: float = 0.33) -> Dict[int, OSMNode]:
     """Retrieves the OSM Nodes in an extend, plus some margin.
@@ -56,5 +59,27 @@ def nodes_in_extent(extent: ExtentDegrees, margin: float = 0.33) -> Dict[int, OS
                         if v is not None and k not in ('lat', 'lon', 'id', 'osm_id', 'way')
                     },
                     )
+    conn.close()
+    return retval
+
+
+def ways_including_nodes(node_ids: List[int]) -> Dict[int, OSMWay]:
+    retval = {}
+    with _get_connection() as conn:
+        with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
+            cur.execute(
+                '''SELECT
+                    id, nodes, tags
+                FROM planet_osm_ways w
+                WHERE
+                    nodes && array[%(node_ids)s]::bigint[]''',
+                dict(node_ids=node_ids))
+            for row in cur:
+                print(row.tags)
+                retval[row.id] = OSMWay(
+                    nodes=row.nodes,
+                    attributes=dict(zip(row.tags[::2], row.tags[1::2])) if row.tags is not None else None
+                )
+
     conn.close()
     return retval
