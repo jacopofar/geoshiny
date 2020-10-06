@@ -1,7 +1,6 @@
-from dataclasses import asdict, dataclass, field, is_dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 import logging
-from json import JSONEncoder
 import random
 from typing import Dict, List, Optional, Tuple
 from xml.dom.minidom import parse
@@ -184,21 +183,12 @@ def asphalt_map(data: AreaData, extent: ExtentDegrees) -> np.ndarray:
     return np.array(img)
 
 
-class EnhancedJSONEncoder(JSONEncoder):
-    def default(self, o):
-        if is_dataclass(o):
-            return asdict(o)
-        if isinstance(o, Enum):
-            return o.name
-        return super().default(o)
-
-
 if __name__ == '__main__':
-    osm_fname = 'map.osm'
-    d, e = xml_to_map_obj(osm_fname)
-    img = asphalt_map(d, e)
+    for osm_name in ['new_york_park.osm', 'sample.osm']:
+        d, e = xml_to_map_obj(osm_name)
+        img = asphalt_map(d, e)
 
-    save_to_geoTIFF(e, img, osm_fname + '.asphalt.tif')
+        save_to_geoTIFF(e, img, osm_name + '.asphalt.tif')
 
     # import json
     # with open(osm_fname + '.json', 'w') as fw:
