@@ -58,7 +58,7 @@ class OSMRelation:
 
 @dataclass
 class AreaData:
-    """Geographical data for some area."""
+    """OSM data for some area."""
     nodes: Dict[int, OSMNode] = field(default_factory=dict)
     ways: Dict[int, OSMWay] = field(default_factory=dict)
     relations: Dict[int, OSMRelation] = field(default_factory=dict)
