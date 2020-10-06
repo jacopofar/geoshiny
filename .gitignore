@@ -1,1 +1,12 @@
+# the DB data folder
 databasedata/
+# notes and reference material
+notes/
+# pytest-cov
+.coverage
+# input and output files
+*.xml
+*.tif
+*.osm
+*.pbf
+*.png
