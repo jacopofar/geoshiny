@@ -92,17 +92,3 @@ if __name__ == '__main__':
         img = asphalt_map(d, e)
 
         save_to_geoTIFF(e, img, osm_name + '.asphalt.tif')
-
-    # import json
-    # with open(osm_fname + '.json', 'w') as fw:
-    #     fw.write(json.dumps(d, indent=2, cls=EnhancedJSONEncoder))
-
-    # from random import randint
-    # image = np.zeros((10, 30, 3), dtype=np.uint8)
-    # for x in range(0, image.shape[0]):
-    #     for y in range(0, image.shape[1]):
-    #         image[x][y][0] = randint(1, 255)
-    #         image[x][y][1] = randint(1, 255)
-    #         image[x][y][2] = randint(1, 255)
-    # # coordinates for the Bresso airport landing strip, used here as a reference
-    # save_to_geoTIFF(ExtentDegrees(45.5331, 45.5465, 9.1986, 9.2056), image, 'newFile.tif')
