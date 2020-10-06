@@ -1,4 +1,5 @@
-from tilesgis.__main__ import xml_to_map_obj, ExtentDegrees
+from tilesgis.types import ExtentDegrees
+from tilesgis.parse_osm_xml import xml_to_map_obj
 
 
 def test_xml_is_parsed():
