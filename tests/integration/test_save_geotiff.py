@@ -1,6 +1,6 @@
 import numpy as np
 
-from tilesgis.__main__ import save_to_geoTIFF, xml_to_map_obj, ExtentDegrees
+from tilesgis.__main__ import save_to_geoTIFF, xml_to_map_obj
 
 
 def test_save_geotiff(tmpdir):
