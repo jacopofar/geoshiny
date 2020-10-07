@@ -1,10 +1,10 @@
 from os import environ
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from tilesgis.types import OSMNode, ExtentDegrees, OSMWay
+from tilesgis.types import OSMNode, ExtentDegrees, OSMRelation, OSMWay, RelMemberType
 
 # TODO now it opens a connection every time, but here it's not a problem
 
@@ -56,6 +56,8 @@ def ways_including_nodes(node_ids: List[int]) -> Dict[int, OSMWay]:
 
     To integrate these nodes, use `add_missing_nodes`
     """
+    if len(node_ids) == 0:
+        return {}
     retval = {}
     with _get_connection() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
@@ -76,19 +78,9 @@ def ways_including_nodes(node_ids: List[int]) -> Dict[int, OSMWay]:
     return retval
 
 
-def add_missing_nodes(nodes: Dict[int, OSMNode], ways: Dict[int, OSMWay]) -> None:
-    """Integrate a list of nodes with ones missing from ways.
-
-    This modifies the nodes dict by adding nodes to it, all the ones present
-    in the given ways but not already in the nodes.
-
-    This is used to get nodes of features only partially in an extent.
-    """
-    missing_nodes = set()
-    for w in ways.values():
-        for n_id in w.nodes:
-            if n_id not in nodes:
-                missing_nodes.add(n_id)
+def _integrate_missing_nodes_by_ids(missing_nodes: Tuple, nodes: Dict[int, OSMNode]) -> None:
+    if len(missing_nodes) == 0:
+        return
     with _get_connection() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute(
@@ -113,3 +105,116 @@ def add_missing_nodes(nodes: Dict[int, OSMNode], ways: Dict[int, OSMWay]) -> Non
                     },
                     )
     conn.close()
+
+
+def add_missing_nodes(nodes: Dict[int, OSMNode], ways: Dict[int, OSMWay]) -> None:
+    """Integrate a list of nodes with ones missing from ways.
+
+    This modifies the nodes dict by adding nodes to it, all the ones present
+    in the given ways but not already in the nodes.
+
+    This is used to get nodes of features only partially in an extent.
+    """
+    missing_nodes = set()
+    for w in ways.values():
+        for n_id in w.nodes:
+            if n_id not in nodes:
+                missing_nodes.add(n_id)
+
+    _integrate_missing_nodes_by_ids(tuple(missing_nodes), nodes)
+
+
+def rels_including_ways(way_ids: List[int]) -> Dict[int, OSMRelation]:
+    """Retrieve the relations that include at least one of the given ways.
+
+    Notice that just as for nodes in ways, a relations overlapping with an
+    extent edge can contain ways that are outside the extent itself.
+    Also note that a relation can include ways AND nodes
+    """
+    if len(way_ids) == 0:
+        return {}
+    retval = {}
+    with _get_connection() as conn:
+        with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
+            cur.execute(
+                '''SELECT
+                    id, members, tags
+                FROM planet_osm_rels
+                WHERE
+                    parts && array[%(way_ids)s]::bigint[]''',
+                dict(way_ids=way_ids))
+            for row in cur:
+                members = []
+                for wdesc, wtype in zip(row.members[::2], row.members[1::2]):
+                    members.append((
+                        RelMemberType.WAY if wdesc.startswith('w') else RelMemberType.NODE,
+                        int(wdesc[1:]),
+                        wtype
+                    ))
+
+                retval[row.id] = OSMRelation(
+                    members=members,
+                    attributes=(
+                        dict(zip(row.tags[::2], row.tags[1::2]))
+                        if row.tags is not None
+                        else None
+                        )
+                )
+
+    conn.close()
+    return retval
+
+
+def add_missing_nodes_and_ways(
+    nodes: Dict[int, OSMNode],
+    ways: Dict[int, OSMWay],
+    rels: Dict[int, OSMRelation],
+        ) -> None:
+    """Integrate a list of nodes and ways with ones missing from rels.
+
+    Just as it happens with nodes and ways, a relation can contain nodes and
+    ways that are both inside and outside an extent.
+s
+    So to draw a map one has to "peek" outside the area.
+
+    This function takes a dictionary of ways and nodes and adds whatever is
+    needed to define the relations.
+    """
+    missing_nodes_ids = set()
+    missing_ways_ids = set()
+    for r in rels.values():
+        for rtype, m_id, _mtype in r.members:
+            if rtype == RelMemberType.NODE:
+                if m_id not in nodes:
+                    missing_nodes_ids.add(m_id)
+            if rtype == RelMemberType.WAY:
+                if m_id not in ways:
+                    missing_ways_ids.add(m_id)
+    print(f'missing ways {len(missing_ways_ids)}')
+    print(f'missing nodes {len(missing_nodes_ids)}')
+
+    if len(missing_ways_ids) > 0:
+        with _get_connection() as conn:
+            with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
+                cur.execute(
+                    '''SELECT
+                        id, nodes, tags
+                    FROM planet_osm_ways w
+                    WHERE
+                        id IN %(way_ids)s''',
+                    dict(way_ids=tuple(missing_ways_ids)))
+                for row in cur:
+                    ways[row.id] = OSMWay(
+                        nodes=row.nodes,
+                        attributes=(
+                            dict(zip(row.tags[::2], row.tags[1::2]))
+                            if row.tags is not None
+                            else None
+                            )
+                    )
+        conn.close()
+
+    _integrate_missing_nodes_by_ids(tuple(missing_nodes_ids), nodes)
+    # now ways and nodes are added
+    # but some of these ways may not have all the needed nodes, so fix it
+    add_missing_nodes(nodes, ways)

@@ -1,7 +1,9 @@
 from tilesgis.types import ExtentDegrees
 from tilesgis.database_extract import (
     add_missing_nodes,
+    add_missing_nodes_and_ways,
     nodes_in_extent,
+    rels_including_ways,
     ways_including_nodes,
 )
 
@@ -28,6 +30,13 @@ def test_get_ways_with_nodes():
         848523542
     ])
     assert len(ways) == 5
+    assert set(ways.keys()) == set([
+        4566442,
+        26382762,
+        48145154,
+        66514420,
+        170077664,
+    ])
 
     assert 66514420 in ways
     w = ways[66514420]
@@ -49,3 +58,37 @@ def test_add_missing_nodes():
 
     add_missing_nodes(nodes, ways)
     assert len(nodes) > original_node_count
+
+
+def test_get_relations_with_ways():
+    rels = rels_including_ways([
+        4566442,
+        26382762,
+        48145154,
+        66514420,
+        170077664,
+    ])
+    assert len(rels) == 1
+    assert 28130 in rels
+    r = rels[28130]
+    assert r.attributes['name'] == 'Senatsverwaltung für Finanzen und Technisches Finanzamt'
+
+
+def test_add_missing_nodes_and_ways():
+    nodes = nodes_in_extent(
+        ExtentDegrees(
+            latmin=52.50319,
+            latmax=52.50507,
+            lonmin=13.22676,
+            lonmax=13.23066,
+            )
+        )
+    original_node_count = len(nodes)
+    ways = ways_including_nodes(list(nodes.keys()))
+    original_ways_count = len(ways)
+    rels = rels_including_ways(list(ways.keys()))
+
+    add_missing_nodes_and_ways(nodes, ways, rels)
+
+    assert len(nodes) > original_node_count
+    assert len(ways) > original_ways_count
