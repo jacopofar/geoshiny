@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from tilesgis.types import OSMNode, ExtentDegrees, OSMRelation, OSMWay, RelMemberType
+from tilesgis.types import AreaData, OSMNode, ExtentDegrees, OSMRelation, OSMWay, RelMemberType
 
 # TODO now it opens a connection every time, but here it's not a problem
 
@@ -218,3 +218,16 @@ s
     # now ways and nodes are added
     # but some of these ways may not have all the needed nodes, so fix it
     add_missing_nodes(nodes, ways)
+
+
+def data_from_extent(extent: ExtentDegrees) -> AreaData:
+    nodes = nodes_in_extent(extent)
+    ways = ways_including_nodes(list(nodes.keys()))
+    rels = rels_including_ways(list(ways.keys()))
+    add_missing_nodes_and_ways(nodes, ways, rels)
+
+    return AreaData(
+        nodes=nodes,
+        ways=ways,
+        relations=rels,
+    )

@@ -2,6 +2,7 @@ from tilesgis.types import ExtentDegrees
 from tilesgis.database_extract import (
     add_missing_nodes,
     add_missing_nodes_and_ways,
+    data_from_extent,
     nodes_in_extent,
     rels_including_ways,
     ways_including_nodes,
@@ -92,3 +93,19 @@ def test_add_missing_nodes_and_ways():
 
     assert len(nodes) > original_node_count
     assert len(ways) > original_ways_count
+
+
+def test_complete_retrieval():
+    extent = ExtentDegrees(
+        latmin=52.50319,
+        latmax=52.50507,
+        lonmin=13.22676,
+        lonmax=13.23066,
+        )
+    data = data_from_extent(extent)
+    direct_nodes = nodes_in_extent(extent)
+    # the exact number changes overe time...
+    assert len(data.nodes) > len(direct_nodes)
+    assert len(data.nodes) > 100
+    assert len(data.ways) > 100
+    assert len(data.relations) > 5
