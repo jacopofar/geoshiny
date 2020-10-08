@@ -1,4 +1,5 @@
 from os import environ
+import logging
 from typing import Dict, List, Tuple
 
 import psycopg2
@@ -7,6 +8,9 @@ from psycopg2.extras import NamedTupleCursor
 from tilesgis.types import AreaData, OSMNode, ExtentDegrees, OSMRelation, OSMWay, RelMemberType
 
 # TODO now it opens a connection every time, but here it's not a problem
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_connection():
@@ -18,6 +22,7 @@ def _get_connection():
 
 def nodes_in_extent(extent: ExtentDegrees) -> Dict[int, OSMNode]:
     retval = {}
+    logger.debug(f'Searching for nodes in extent {extent}')
     with _get_connection() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute(
@@ -56,6 +61,7 @@ def ways_including_nodes(node_ids: List[int]) -> Dict[int, OSMWay]:
 
     To integrate these nodes, use `add_missing_nodes`
     """
+    logger.debug(f'Searching for ways containing one of {len(node_ids)} nodes')
     if len(node_ids) == 0:
         return {}
     retval = {}
@@ -75,6 +81,8 @@ def ways_including_nodes(node_ids: List[int]) -> Dict[int, OSMWay]:
                 )
 
     conn.close()
+    logger.debug(f'Found {len(retval)} matching ways')
+
     return retval
 
 
@@ -131,6 +139,10 @@ def rels_including_ways(way_ids: List[int]) -> Dict[int, OSMRelation]:
     extent edge can contain ways that are outside the extent itself.
     Also note that a relation can include ways AND nodes
     """
+    logger.debug(
+        f'Searching for relations containing one of {len(way_ids)} ways'
+    )
+
     if len(way_ids) == 0:
         return {}
     retval = {}
@@ -162,6 +174,7 @@ def rels_including_ways(way_ids: List[int]) -> Dict[int, OSMRelation]:
                 )
 
     conn.close()
+    logger.debug(f'Found{len(retval)} matching relations')
     return retval
 
 
@@ -190,8 +203,6 @@ s
             if rtype == RelMemberType.WAY:
                 if m_id not in ways:
                     missing_ways_ids.add(m_id)
-    print(f'missing ways {len(missing_ways_ids)}')
-    print(f'missing nodes {len(missing_nodes_ids)}')
 
     if len(missing_ways_ids) > 0:
         with _get_connection() as conn:
