@@ -6,6 +6,8 @@ from tilesgis.database_extract import (
     nodes_in_extent,
     rels_including_ways,
     ways_including_nodes,
+    ways_in_extent,
+    relations_in_extent,
 )
 
 
@@ -19,25 +21,23 @@ def test_nodes_in_extent():
             )
         )
     # meh, no fixtures here, data may change :/
-    assert len(nodes) > 1000
+    assert len(nodes) > 100
     assert 289032659 in nodes
     n = nodes[289032659]
     assert n.attributes == {'addr_housenumber': '13'}
 
 
-def test_get_ways_with_nodes():
-    ways = ways_including_nodes([
-        289032659,
-        848523542
-    ])
-    assert len(ways) == 5
-    assert set(ways.keys()) == set([
-        4566442,
-        26382762,
-        48145154,
-        66514420,
-        170077664,
-    ])
+def test_ways_in_extent():
+    ways = ways_in_extent(
+        ExtentDegrees(
+            latmin=52.5130200,
+            lonmin=13.4087500,
+            latmax=52.5160500,
+            lonmax=13.4154700,
+            )
+        )
+    # meh, no fixtures here, data may change :/
+    assert len(ways) > 100
 
     assert 66514420 in ways
     w = ways[66514420]
@@ -46,16 +46,15 @@ def test_get_ways_with_nodes():
 
 
 def test_add_missing_nodes():
-    nodes = nodes_in_extent(
-        ExtentDegrees(
+    extent = ExtentDegrees(
             latmin=52.5130200,
             lonmin=13.4087500,
             latmax=52.5160500,
             lonmax=13.4154700,
             )
-        )
+    nodes = nodes_in_extent(extent)
     original_node_count = len(nodes)
-    ways = ways_including_nodes(list(nodes.keys()))
+    ways = ways_in_extent(extent)
 
     add_missing_nodes(nodes, ways)
     assert len(nodes) > original_node_count
@@ -75,17 +74,32 @@ def test_get_relations_with_ways():
     assert r.attributes['name'] == 'Senatsverwaltung für Finanzen und Technisches Finanzamt'
 
 
-def test_add_missing_nodes_and_ways():
-    nodes = nodes_in_extent(
-        ExtentDegrees(
-            latmin=52.50319,
-            latmax=52.50507,
-            lonmin=13.22676,
-            lonmax=13.23066,
+def test_relations_in_extent():
+    extent = ExtentDegrees(
+            latmin=52.5130200,
+            lonmin=13.4087500,
+            latmax=52.5160500,
+            lonmax=13.4154700,
             )
-        )
+    rels = relations_in_extent(extent)
+
+    assert len(rels) > 200
+    assert 28130 in rels
+    r = rels[28130]
+    assert r.attributes['name'] == 'Senatsverwaltung für Finanzen und Technisches Finanzamt'
+
+
+def test_add_missing_nodes_and_ways():
+    extent = ExtentDegrees(
+            latmin=52.50319,
+            latmax=52.52507,
+            lonmin=13.29676,
+            lonmax=13.33066,
+            )
+    nodes = nodes_in_extent(extent)
+
     original_node_count = len(nodes)
-    ways = ways_including_nodes(list(nodes.keys()))
+    ways = ways_in_extent(extent)
     original_ways_count = len(ways)
     rels = rels_including_ways(list(ways.keys()))
 
@@ -103,9 +117,7 @@ def test_complete_retrieval():
         lonmax=13.23066,
         )
     data = data_from_extent(extent)
-    direct_nodes = nodes_in_extent(extent)
     # the exact number changes overe time...
-    assert len(data.nodes) > len(direct_nodes)
     assert len(data.nodes) > 100
     assert len(data.ways) > 100
     assert len(data.relations) > 5

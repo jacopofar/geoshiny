@@ -2,6 +2,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
+from pyproj import Transformer
+
+
+TRAN_4326_TO_3857 = Transformer.from_crs("EPSG:4326", "EPSG:3857")
+
 
 @dataclass
 class ExtentDegrees:
@@ -36,6 +41,16 @@ class ExtentDegrees:
             latmax=int(self.latmax * 10 ** 7),
             lonmin=int(self.lonmin * 10 ** 7),
             lonmax=int(self.lonmax * 10 ** 7),
+        )
+
+    def as_epsg3857(self):
+        lonmin, latmin = TRAN_4326_TO_3857.transform(self.latmin, self.lonmin)
+        lonmax, latmax = TRAN_4326_TO_3857.transform(self.latmax, self.lonmax)
+        return dict(
+            latmin=latmin,
+            latmax=latmax,
+            lonmin=lonmin,
+            lonmax=lonmax,
         )
 
 

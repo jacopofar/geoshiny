@@ -1,5 +1,6 @@
 import logging
 import random
+from tilesgis.database_extract import data_from_extent
 from typing import Tuple
 
 from osgeo import gdal
@@ -87,7 +88,22 @@ def asphalt_map(data: AreaData, extent: ExtentDegrees) -> np.ndarray:
 
 
 if __name__ == '__main__':
-    for osm_name in ['new_york_park.osm', 'sample.osm']:
+
+    e = ExtentDegrees(
+        latmin=52.4650,
+        latmax=52.5805,
+        lonmin=13.2911,
+        lonmax=13.5249
+    )
+    d = data_from_extent(e)
+    img = asphalt_map(d, e)
+    save_to_geoTIFF(e, img, 'all_berlin.db.asphalt.tif')
+
+    for osm_name in ['new_york_park.osm', 'sample.osm', 'museum_insel_berlin.osm']:
         d, e = xml_to_map_obj(osm_name)
         img = asphalt_map(d, e)
         save_to_geoTIFF(e, img, osm_name + '.asphalt.tif')
+
+        d2 = data_from_extent(e)
+        img2 = asphalt_map(d2, e)
+        save_to_geoTIFF(e, img2, osm_name + '.db.asphalt.tif')
