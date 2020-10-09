@@ -1,18 +1,17 @@
 import logging
-import random
-from tilesgis.database_extract import data_from_extent
-from typing import Tuple
+
 
 from osgeo import gdal
 from osgeo import osr
 import numpy as np
-from PIL import Image, ImageDraw
 
 from tilesgis.types import (
-    AreaData,
     ExtentDegrees,
+    OSMWay,
 )
 from tilesgis.parse_osm_xml import xml_to_map_obj
+from tilesgis.database_extract import data_from_extent
+from tilesgis.draw_helpers import map_to_image
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -45,65 +44,39 @@ def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
     dst_ds.FlushCache()
 
 
-def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: ExtentDegrees) -> Tuple[float, float]:
-    """Convert lat/lon coordinate to a pixel coordinate for a given area.
-
-    NOTE: this assumes the extent is very small, enough to not introduce errors
-    due to curvature. For this project is usually no bigger than a few blocks,
-    but a city should be fine too.
-    """
-    x = (lon - extent.lonmin) * width / (extent.lonmax - extent.lonmin)
-    y = (lat - extent.latmin) * height / (extent.latmax - extent.latmin)
-
-    return x, y
-
-
-def asphalt_map(data: AreaData, extent: ExtentDegrees) -> np.ndarray:
-    """Calculate the image with ways within the given extent."""
-    img = Image.new('RGB', (800, 800), (0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    asphalt_ways = []
-    for w in data.ways.values():
-        if w.attributes is None:
-            continue
-        if w.attributes.get('surface') == 'asphalt':
-            asphalt_ways.append(w.nodes)
-
-    for way in asphalt_ways:
-        red = random.randint(1, 250)
-        green = random.randint(1, 250)
-        blue = random.randint(1, 250)
-        for id1, id2 in zip(way, way[1:]):
-            n1 = data.nodes.get(id1)
-            n2 = data.nodes.get(id2)
-            if n1 is None or n2 is None:
-                continue
-            # now n1 and n2 are two nodes connected by asphalt
-            x1, y1 = coord_to_pixel(n1.lat, n1.lon, img.size[0], img.size[1], extent)
-            x2, y2 = coord_to_pixel(n2.lat, n2.lon, img.size[0], img.size[1], extent)
-            draw.line((x1, y1, x2, y2), fill=(red, green, blue))  # type: ignore
-
-    return np.array(img)
+def asphalt_way_callback(w: OSMWay):
+    if w.attributes is None:
+        return
+    if w.attributes.get('surface') == 'asphalt':
+        return (128, 128, 128)
 
 
 if __name__ == '__main__':
+    # this cover most of Berlin, takes 5 minutes
+    # e = ExtentDegrees(
+    #     latmin=52.4650,
+    #     latmax=52.5805,
+    #     lonmin=13.2911,
+    #     lonmax=13.5249
+    # )
+    # d = data_from_extent(e)
+    # img = asphalt_map(d, e)
+    # save_to_geoTIFF(e, img, 'all_berlin.db.asphalt.tif')
 
-    e = ExtentDegrees(
-        latmin=52.4650,
-        latmax=52.5805,
-        lonmin=13.2911,
-        lonmax=13.5249
-    )
-    d = data_from_extent(e)
-    img = asphalt_map(d, e)
-    save_to_geoTIFF(e, img, 'all_berlin.db.asphalt.tif')
+    osm_name = 'museum_insel_berlin.osm'
+    xml_data, extent = xml_to_map_obj(osm_name)
+    xml_img = map_to_image(extent, xml_data, way_callback=asphalt_way_callback)
+    save_to_geoTIFF(extent, xml_img, 'image_from_xml.tif')
 
-    for osm_name in ['new_york_park.osm', 'sample.osm', 'museum_insel_berlin.osm']:
-        d, e = xml_to_map_obj(osm_name)
-        img = asphalt_map(d, e)
-        save_to_geoTIFF(e, img, osm_name + '.asphalt.tif')
+    db_data = data_from_extent(extent)
+    db_img = map_to_image(extent, db_data, way_callback=asphalt_way_callback)
+    save_to_geoTIFF(extent, db_img, 'image_from_db.tif')
 
-        d2 = data_from_extent(e)
-        img2 = asphalt_map(d2, e)
-        save_to_geoTIFF(e, img2, osm_name + '.db.asphalt.tif')
+    # for osm_name in ['new_york_park.osm', 'sample.osm', 'museum_insel_berlin.osm']:
+    #     d, e = xml_to_map_obj(osm_name)
+    #     img = asphalt_map(d, e)
+    #     save_to_geoTIFF(e, img, osm_name + '.asphalt.tif')
+
+    #     d2 = data_from_extent(e)
+    #     img2 = asphalt_map(d2, e)
+    #     save_to_geoTIFF(e, img2, osm_name + '.db.asphalt.tif')

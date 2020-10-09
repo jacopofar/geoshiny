@@ -1,6 +1,6 @@
 from pytest import approx
 
-from tilesgis.__main__ import coord_to_pixel
+from tilesgis.draw_helpers import coord_to_pixel
 from tilesgis.types import ExtentDegrees
 
 
