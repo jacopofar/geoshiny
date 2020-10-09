@@ -17,75 +17,6 @@ def _get_connection():
     return psycopg2.connect(dsn=environ['PGIS_CONN_STR'])
 
 
-# TODO once the code to get ways is ready, nodes can be retrieved from ways
-# without the margin workaround
-
-def old_nodes_in_extent(extent: ExtentDegrees) -> Dict[int, OSMNode]:
-    retval = {}
-    logger.debug(f'Searching for nodes in extent {extent}')
-    with _get_connection() as conn:
-        with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
-            cur.execute(
-                '''SELECT
-                    n.id, n.lat, n.lon, p.*
-                FROM planet_osm_nodes n
-                LEFT JOIN planet_osm_point p
-                    ON p.osm_id = n.id
-                WHERE
-                    lat >= %(latmin)s
-                    AND lat <= %(latmax)s
-                    AND lon >= %(lonmin)s
-                    AND lon <= %(lonmax)s''',
-                extent.as_e7_dict())
-            for row in cur:
-                retval[row.id] = OSMNode(
-                    lat=row.lat / 10 ** 7,
-                    lon=row.lon / 10 ** 7,
-                    attributes={
-                        k: v
-                        for (k, v) in row._asdict().items()
-                        if v is not None and k not in ('lat', 'lon', 'id', 'osm_id', 'way')
-                    },
-                    )
-    conn.close()
-    return retval
-
-
-def ways_including_nodes(node_ids: List[int]) -> Dict[int, OSMWay]:
-    """Retrieve the ways that include at least one of the given nodes.
-
-    Notice that ways can and likely will overlap to the extent nodes are from.
-    If for example a building is only partially in an extent the corresponding
-    way will be retrieved but it will include nodes that are part of the
-    building but not of the nodes.
-
-    To integrate these nodes, use `add_missing_nodes`
-    """
-    logger.debug(f'Searching for ways containing one of {len(node_ids)} nodes')
-    if len(node_ids) == 0:
-        return {}
-    retval = {}
-    with _get_connection() as conn:
-        with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
-            cur.execute(
-                '''SELECT
-                    id, nodes, tags
-                FROM planet_osm_ways w
-                WHERE
-                    nodes && array[%(node_ids)s]::bigint[]''',
-                dict(node_ids=node_ids))
-            for row in cur:
-                retval[row.id] = OSMWay(
-                    nodes=row.nodes,
-                    attributes=dict(zip(row.tags[::2], row.tags[1::2])) if row.tags is not None else None
-                )
-
-    conn.close()
-    logger.debug(f'Found {len(retval)} matching ways')
-
-    return retval
-
-
 def _integrate_missing_nodes_by_ids(missing_nodes: Tuple, nodes: Dict[int, OSMNode]) -> None:
     logger.debug(f'Retrieving and adding {len(missing_nodes)}')
     if len(missing_nodes) == 0:
@@ -234,19 +165,6 @@ s
     # now ways and nodes are added
     # but some of these ways may not have all the needed nodes, so fix it
     add_missing_nodes(nodes, ways)
-
-
-def old_data_from_extent(extent: ExtentDegrees) -> AreaData:
-    nodes = nodes_in_extent(extent)
-    ways = ways_including_nodes(list(nodes.keys()))
-    rels = rels_including_ways(list(ways.keys()))
-    add_missing_nodes_and_ways(nodes, ways, rels)
-
-    return AreaData(
-        nodes=nodes,
-        ways=ways,
-        relations=rels,
-    )
 
 
 def data_from_extent(extent: ExtentDegrees) -> AreaData:

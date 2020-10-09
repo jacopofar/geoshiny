@@ -5,7 +5,6 @@ from tilesgis.database_extract import (
     data_from_extent,
     nodes_in_extent,
     rels_including_ways,
-    ways_including_nodes,
     ways_in_extent,
     relations_in_extent,
 )
