@@ -1,10 +1,8 @@
 from tilesgis.types import ExtentDegrees
 from tilesgis.database_extract import (
     add_missing_nodes,
-    add_missing_nodes_and_ways,
     data_from_extent,
     nodes_in_extent,
-    rels_including_ways,
     ways_in_extent,
     relations_in_extent,
 )
@@ -59,20 +57,6 @@ def test_add_missing_nodes():
     assert len(nodes) > original_node_count
 
 
-def test_get_relations_with_ways():
-    rels = rels_including_ways([
-        4566442,
-        26382762,
-        48145154,
-        66514420,
-        170077664,
-    ])
-    assert len(rels) == 1
-    assert 28130 in rels
-    r = rels[28130]
-    assert r.attributes['name'] == 'Senatsverwaltung für Finanzen und Technisches Finanzamt'
-
-
 def test_relations_in_extent():
     extent = ExtentDegrees(
             latmin=52.5130200,
@@ -86,26 +70,6 @@ def test_relations_in_extent():
     assert 28130 in rels
     r = rels[28130]
     assert r.attributes['name'] == 'Senatsverwaltung für Finanzen und Technisches Finanzamt'
-
-
-def test_add_missing_nodes_and_ways():
-    extent = ExtentDegrees(
-            latmin=52.50319,
-            latmax=52.52507,
-            lonmin=13.29676,
-            lonmax=13.33066,
-            )
-    nodes = nodes_in_extent(extent)
-
-    original_node_count = len(nodes)
-    ways = ways_in_extent(extent)
-    original_ways_count = len(ways)
-    rels = rels_including_ways(list(ways.keys()))
-
-    add_missing_nodes_and_ways(nodes, ways, rels)
-
-    assert len(nodes) > original_node_count
-    assert len(ways) > original_ways_count
 
 
 def test_complete_retrieval():

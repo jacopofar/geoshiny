@@ -8,6 +8,10 @@ Pillow==7.2.0
 psycopg2-binary==2.8.6
 # coordinate system conversion
 pyproj==2.6.1.post1
+# geometrical operations, easy GeoJSON parsing
+Shapely==1.7.1
+# display, and quick troubleshooting
+matplotlib==3.3.2
 # tests
 pytest==6.1.1
 pytest-cov==2.10.1

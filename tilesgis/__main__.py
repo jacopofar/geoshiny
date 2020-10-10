@@ -1,6 +1,5 @@
 import logging
 
-
 from osgeo import gdal
 from osgeo import osr
 import numpy as np
@@ -51,6 +50,12 @@ def asphalt_way_callback(w: OSMWay):
         return (128, 128, 128)
 
 
+def any_way_callback(w: OSMWay):
+    if w.attributes is not None:
+        logger.info(w.attributes)
+    return (250, 250, 250)
+
+
 if __name__ == '__main__':
     # this cover most of Berlin, takes 5 minutes
     # e = ExtentDegrees(
@@ -63,13 +68,15 @@ if __name__ == '__main__':
     # img = asphalt_map(d, e)
     # save_to_geoTIFF(e, img, 'all_berlin.db.asphalt.tif')
 
+    way_callback = any_way_callback
+
     osm_name = 'museum_insel_berlin.osm'
     xml_data, extent = xml_to_map_obj(osm_name)
-    xml_img = map_to_image(extent, xml_data, way_callback=asphalt_way_callback)
+    xml_img = map_to_image(extent, xml_data, way_callback=way_callback)
     save_to_geoTIFF(extent, xml_img, 'image_from_xml.tif')
 
     db_data = data_from_extent(extent)
-    db_img = map_to_image(extent, db_data, way_callback=asphalt_way_callback)
+    db_img = map_to_image(extent, db_data, way_callback=way_callback)
     save_to_geoTIFF(extent, db_img, 'image_from_db.tif')
 
     # for osm_name in ['new_york_park.osm', 'sample.osm', 'museum_insel_berlin.osm']:

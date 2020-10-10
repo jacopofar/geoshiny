@@ -1,6 +1,6 @@
 from os import environ
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
@@ -64,52 +64,6 @@ def add_missing_nodes(nodes: Dict[int, OSMNode], ways: Dict[int, OSMWay]) -> Non
     _integrate_missing_nodes_by_ids(tuple(missing_nodes), nodes)
 
 
-def rels_including_ways(way_ids: List[int]) -> Dict[int, OSMRelation]:
-    """Retrieve the relations that include at least one of the given ways.
-
-    Notice that just as for nodes in ways, a relations overlapping with an
-    extent edge can contain ways that are outside the extent itself.
-    Also note that a relation can include ways AND nodes
-    """
-    logger.debug(
-        f'Searching for relations containing one of {len(way_ids)} ways'
-    )
-
-    if len(way_ids) == 0:
-        return {}
-    retval = {}
-    with _get_connection() as conn:
-        with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
-            cur.execute(
-                '''SELECT
-                    id, members, tags
-                FROM planet_osm_rels
-                WHERE
-                    parts && array[%(way_ids)s]::bigint[]''',
-                dict(way_ids=way_ids))
-            for row in cur:
-                members = []
-                for wdesc, wtype in zip(row.members[::2], row.members[1::2]):
-                    members.append((
-                        RelMemberType.WAY if wdesc.startswith('w') else RelMemberType.NODE,
-                        int(wdesc[1:]),
-                        wtype
-                    ))
-
-                retval[row.id] = OSMRelation(
-                    members=members,
-                    attributes=(
-                        dict(zip(row.tags[::2], row.tags[1::2]))
-                        if row.tags is not None
-                        else None
-                        )
-                )
-
-    conn.close()
-    logger.debug(f'Found{len(retval)} matching relations')
-    return retval
-
-
 def add_missing_nodes_and_ways(
     nodes: Dict[int, OSMNode],
     ways: Dict[int, OSMWay],
@@ -119,7 +73,7 @@ def add_missing_nodes_and_ways(
 
     Just as it happens with nodes and ways, a relation can contain nodes and
     ways that are both inside and outside an extent.
-s
+
     So to draw a map one has to "peek" outside the area.
 
     This function takes a dictionary of ways and nodes and adds whatever is
