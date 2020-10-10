@@ -67,6 +67,7 @@ class OSMWay:
     """OSM Way object."""
     nodes: List[int] = field(default_factory=list)
     attributes: Optional[Dict[str, str]] = None
+    geoJSON: Optional[str] = None
 
 
 class RelMemberType(Enum):
@@ -79,6 +80,7 @@ class OSMRelation:
     """OSM Relation object."""
     members: List[Tuple[RelMemberType, int, str]] = field(default_factory=list)
     attributes: Optional[Dict[str, str]] = None
+    geoJSON: Optional[str] = None
 
 
 @dataclass

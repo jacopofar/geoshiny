@@ -1,9 +1,13 @@
+import logging
 from typing import Tuple
 
 from PIL import Image, ImageDraw
+from matplotlib import pyplot
 import numpy as np
 
 from tilesgis.types import ExtentDegrees, AreaData
+
+logger = logging.getLogger(__name__)
 
 
 def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: ExtentDegrees) -> Tuple[float, float]:
@@ -48,4 +52,5 @@ def map_to_image(
             x2, y2 = coord_to_pixel(n2.lat, n2.lon, img.size[0], img.size[1], extent)
             draw.line((x1, y1, x2, y2), fill=color)  # type: ignore
 
+    pyplot.show()
     return np.array(img)

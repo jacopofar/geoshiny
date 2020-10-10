@@ -5,7 +5,7 @@ from osgeo import osr
 import numpy as np
 
 from tilesgis.types import (
-    ExtentDegrees,
+    ExtentDegrees, OSMRelation,
     OSMWay,
 )
 from tilesgis.parse_osm_xml import xml_to_map_obj
@@ -56,6 +56,10 @@ def any_way_callback(w: OSMWay):
     return (250, 250, 250)
 
 
+def any_rel_callback(r: OSMRelation):
+    return (250, 250, 250)
+
+
 if __name__ == '__main__':
     # this cover most of Berlin, takes 5 minutes
     # e = ExtentDegrees(
@@ -72,11 +76,11 @@ if __name__ == '__main__':
 
     osm_name = 'museum_insel_berlin.osm'
     xml_data, extent = xml_to_map_obj(osm_name)
-    xml_img = map_to_image(extent, xml_data, way_callback=way_callback)
+    xml_img = map_to_image(extent, xml_data, way_callback=way_callback, relation_callback=any_rel_callback)
     save_to_geoTIFF(extent, xml_img, 'image_from_xml.tif')
 
     db_data = data_from_extent(extent)
-    db_img = map_to_image(extent, db_data, way_callback=way_callback)
+    db_img = map_to_image(extent, db_data, way_callback=way_callback, relation_callback=any_rel_callback)
     save_to_geoTIFF(extent, db_img, 'image_from_db.tif')
 
     # for osm_name in ['new_york_park.osm', 'sample.osm', 'museum_insel_berlin.osm']:

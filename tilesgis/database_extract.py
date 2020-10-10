@@ -180,7 +180,10 @@ def ways_in_extent(extent: ExtentDegrees) -> Dict[int, OSMWay]:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute(
                 '''SELECT
-                        id, nodes, tags
+                        id,
+                        nodes,
+                        tags,
+                        ST_AsGeoJSON(ST_Transform(l.way, 4326)) AS geojson
                     FROM planet_osm_ways w
 
                     JOIN planet_osm_line l
@@ -193,7 +196,10 @@ def ways_in_extent(extent: ExtentDegrees) -> Dict[int, OSMWay]:
                     UNION ALL
 
                     SELECT
-                        id, nodes, tags
+                        id,
+                        nodes,
+                        tags,
+                        ST_AsGeoJSON(ST_Transform(r.way, 4326)) AS geojson
                     FROM planet_osm_ways w
 
                             JOIN planet_osm_roads r
@@ -204,8 +210,12 @@ def ways_in_extent(extent: ExtentDegrees) -> Dict[int, OSMWay]:
                             , 3857)
 
                     UNION ALL
+
                     SELECT
-                        id, nodes, tags
+                        id,
+                        nodes,
+                        tags,
+                        ST_AsGeoJSON(ST_Transform(p.way, 4326)) AS geojson
                     FROM planet_osm_ways w
 
                             JOIN planet_osm_polygon p
@@ -219,7 +229,11 @@ def ways_in_extent(extent: ExtentDegrees) -> Dict[int, OSMWay]:
             for row in cur:
                 retval[row.id] = OSMWay(
                     nodes=row.nodes,
-                    attributes=dict(zip(row.tags[::2], row.tags[1::2])) if row.tags is not None else None
+                    attributes=(
+                        dict(zip(row.tags[::2], row.tags[1::2]))
+                        if row.tags is not None
+                        else None),
+                    geoJSON=row.geojson
                 )
 
     conn.close()
@@ -241,7 +255,10 @@ def relations_in_extent(extent: ExtentDegrees) -> Dict[int, OSMRelation]:
             # maybe sometimes we need to change the sign
             cur.execute(
                 '''SELECT
-                        id, members, tags
+                        id,
+                        members,
+                        tags,
+                        ST_AsGeoJSON(ST_Transform(l.way, 4326)) AS geojson
                     FROM planet_osm_rels rel
 
                     JOIN planet_osm_line l
@@ -254,7 +271,10 @@ def relations_in_extent(extent: ExtentDegrees) -> Dict[int, OSMRelation]:
                     UNION ALL
 
                     SELECT
-                        id, members, tags
+                        id,
+                        members,
+                        tags,
+                        ST_AsGeoJSON(ST_Transform(r.way, 4326)) AS geojson
                     FROM planet_osm_rels rel
 
                             JOIN planet_osm_roads r
@@ -267,7 +287,10 @@ def relations_in_extent(extent: ExtentDegrees) -> Dict[int, OSMRelation]:
                     UNION ALL
 
                     SELECT
-                        id, members, tags
+                        id,
+                        members,
+                        tags,
+                        ST_AsGeoJSON(ST_Transform(p.way, 4326)) AS geojson
                     FROM planet_osm_rels rel
 
                             JOIN planet_osm_polygon p
@@ -293,7 +316,8 @@ def relations_in_extent(extent: ExtentDegrees) -> Dict[int, OSMRelation]:
                         dict(zip(row.tags[::2], row.tags[1::2]))
                         if row.tags is not None
                         else None
-                        )
+                        ),
+                    geoJSON=row.geojson,
                 )
 
     conn.close()
