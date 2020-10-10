@@ -1,13 +1,76 @@
 import logging
-from typing import Tuple
+from typing import List, Dict, Tuple
 
 from PIL import Image, ImageDraw
 from matplotlib import pyplot
+from matplotlib.figure import Figure
 import numpy as np
+from shapely.geometry.base import BaseGeometry
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path
+from numpy import asarray, concatenate, ones
 
 from tilesgis.types import ExtentDegrees, AreaData
 
 logger = logging.getLogger(__name__)
+
+
+class Polygon(object):
+    # Adapt Shapely or GeoJSON/geo_interface polygons to a common interface
+    def __init__(self, context):
+        if hasattr(context, 'interiors'):
+            self.context = context
+        else:
+            self.context = getattr(context, '__geo_interface__', context)
+    @property
+    def geom_type(self):
+        return (getattr(self.context, 'geom_type', None)
+                or self.context['type'])
+    @property
+    def exterior(self):
+        return (getattr(self.context, 'exterior', None)
+                or self.context['coordinates'][0])
+    @property
+    def interiors(self):
+        value = getattr(self.context, 'interiors', None)
+        if value is None:
+            value = self.context['coordinates'][1:]
+        return value
+
+
+def PolygonPath(polygon):
+    """Constructs a compound matplotlib path from a Shapely or GeoJSON-like
+    geometric object"""
+    this = Polygon(polygon)
+    assert this.geom_type == 'Polygon'
+    def coding(ob):
+        # The codes will be all "LINETO" commands, except for "MOVETO"s at the
+        # beginning of each subpath
+        n = len(getattr(ob, 'coords', None) or ob)
+        vals = ones(n, dtype=Path.code_type) * Path.LINETO
+        vals[0] = Path.MOVETO
+        return vals
+    vertices = concatenate(
+                    [asarray(this.exterior)[:, :2]]
+                    + [asarray(r)[:, :2] for r in this.interiors])
+    codes = concatenate(
+                [coding(this.exterior)]
+                + [coding(r) for r in this.interiors])
+    return Path(vertices, codes)
+
+
+def PolygonPatch(polygon, **kwargs):
+    """Constructs a matplotlib patch from a geometric object
+
+    The `polygon` may be a Shapely or GeoJSON-like object with or without holes.
+    The `kwargs` are those supported by the matplotlib.patches.Polygon class
+    constructor. Returns an instance of matplotlib.patches.PathPatch.
+    Example (using Shapely Point and a matplotlib axes):
+      >>> b = Point(0, 0).buffer(1.0)
+      >>> patch = PolygonPatch(b, fc='blue', ec='blue', alpha=0.5)
+      >>> axis.add_patch(patch)
+    """
+    return PathPatch(PolygonPath(polygon), **kwargs)
 
 
 def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: ExtentDegrees) -> Tuple[float, float]:
@@ -29,7 +92,7 @@ def map_to_image(
     point_callback=None,
     way_callback=None,
     relation_callback=None,
-        ):
+        ) -> np.ndarray:
     img = Image.new('RGB', (800, 800), (0, 0, 0))
     draw = ImageDraw.Draw(img)
 
@@ -54,3 +117,63 @@ def map_to_image(
 
     pyplot.show()
     return np.array(img)
+
+
+def render_shapes_to_figure(extent: ExtentDegrees, to_draw: List[Tuple[BaseGeometry, Dict]]) -> Figure:
+    """Renders arbitrary Shapely geometrical objects to a Figure.
+
+    This is quite ambitious!
+
+    the to_draw argument is a list of Shapely geometrical objects and rules to
+    draw them (color, style, etc.)
+    """
+    fig = Figure(figsize=(5, 5), dpi=300, frameon=False)
+    ax = fig.add_subplot()
+    ax.set_ylim(extent.latmin, extent.latmax)
+    ax.set_xlim(extent.lonmin, extent.lonmax)
+    # the following lines are the result of an ABSURD amount of attempts
+    # I really hope one day matplotlib will become more intuitive ;_;
+    ax.set_xmargin(0.0)
+    ax.set_ymargin(0.0)
+    ax.set_axis_off()
+    ax.invert_yaxis()
+
+    fig.subplots_adjust(bottom=0)
+    fig.subplots_adjust(top=1)
+    fig.subplots_adjust(right=1)
+    fig.subplots_adjust(left=0)
+
+    ax.plot([extent.lonmin, extent.lonmax], [extent.latmin, extent.latmax])
+    ax.plot([extent.lonmin, extent.lonmax], [extent.latmin, extent.latmin])
+    ax.plot([extent.lonmin, extent.lonmin], [extent.latmin, extent.latmax])
+    ax.plot([extent.lonmax, extent.lonmax], [extent.latmin, extent.latmax])
+
+    for geom, options in to_draw:
+        if geom.type == 'LineString':
+            if 'line' not in options and 'vertex' not in options:
+                raise ValueError(
+                    "no 'vertex' nor 'line' option given to draw a LineString"
+                    )
+            if 'line' in options:
+                # draw the line
+                x, y = geom.xy
+                ax.plot(x, y, **options['line'])
+            if 'vertex' in options:
+                # draw the vertex
+                x, y = zip(*list((p.x, p.y) for p in geom.boundary))
+                ax.plot(x, y, options.get('vertex_fmt'), **options['vertex'])
+            continue
+
+        if geom.type == 'Polygon':
+            if 'line' not in options and 'vertex' not in options:
+                raise ValueError(
+                    "no 'vertex' nor 'line' option given to draw a LineString"
+                    )
+            if 'line' in options:
+                # draw the line
+                patch = PolygonPatch(geom, alpha=0.5, zorder=2)
+                ax.add_patch(patch)
+            continue
+        raise ValueError(f'Cannot draw type {geom.type}')
+
+    return fig
