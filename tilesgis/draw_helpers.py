@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import List, Dict, Tuple
 
@@ -6,6 +7,7 @@ from matplotlib import pyplot
 from matplotlib.figure import Figure
 import numpy as np
 from shapely.geometry.base import BaseGeometry
+from shapely.geometry import shape
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -127,6 +129,41 @@ def map_to_image(
     return np.array(img)
 
 
+def map_to_figure(
+    extent: ExtentDegrees,
+    data: AreaData,
+    point_callback=None,
+    way_callback=None,
+    relation_callback=None,
+        ) -> Figure:
+
+    to_draw = []
+    # TODO what to do with points?
+
+    if way_callback is not None:
+        for w in data.ways.values():
+            if w.geoJSON is None:
+                continue
+            draw_options = way_callback(w)
+            if draw_options is not None:
+                to_draw.append((
+                    shape(json.loads(w.geoJSON)),
+                    draw_options,
+                    ))
+
+    if relation_callback is not None:
+        for r in data.relations.values():
+            if r.geoJSON is None:
+                continue
+            draw_options = relation_callback(r)
+            if draw_options is not None:
+                to_draw.append((
+                    shape(json.loads(r.geoJSON)),
+                    draw_options,
+                    ))
+    return render_shapes_to_figure(extent, to_draw)
+
+
 def render_shapes_to_figure(
     extent: ExtentDegrees,
     to_draw: List[Tuple[BaseGeometry, Dict]],
@@ -157,24 +194,15 @@ def render_shapes_to_figure(
 
     for geom, options in to_draw:
         if geom.type == 'LineString':
-            if 'line' not in options and 'vertex' not in options:
-                raise ValueError(
-                    "no 'vertex' nor 'line' option given to draw a LineString"
-                    )
-            if 'line' in options:
-                # draw the line
-                x, y = geom.xy
-                ax.plot(x, y, **options['line'])
-            if 'vertex' in options:
-                # draw the vertex
-                x, y = zip(*list((p.x, p.y) for p in geom.boundary))
-                ax.plot(x, y, options.get('vertex_fmt'), **options['vertex'])
+            x, y = geom.xy
+            ax.plot(x, y, **options)
             continue
 
         if geom.type == 'Polygon':
             patch = PolygonPatch(geom, **options)
             ax.add_patch(patch)
             continue
+
         raise ValueError(f'Cannot draw type {geom.type}')
 
     return fig

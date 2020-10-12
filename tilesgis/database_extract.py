@@ -18,7 +18,7 @@ def _get_connection():
 
 
 def _integrate_missing_nodes_by_ids(missing_nodes: Tuple, nodes: Dict[int, OSMNode]) -> None:
-    logger.debug(f'Retrieving and adding {len(missing_nodes)}')
+    logger.debug(f'Retrieving and adding {len(missing_nodes)} missing nodes')
     if len(missing_nodes) == 0:
         return
     with _get_connection() as conn:
