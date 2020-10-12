@@ -11,6 +11,8 @@ def test_aaaaa_weird_anomaly():
     tl;dr:  you have to install Shapely with the --no-binary option, to compile
             it and ensure it has the same GEOS version as GDAL.
 
+            This problem seems specific of macOS
+
     Now a more detailed explanation:
     GDAL is the library used in this project to generate geoTIFF.
     I don't love it because the docs are a bit weird, but it works.
