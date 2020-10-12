@@ -19,3 +19,6 @@ pytest-cov==2.10.1
 
 # util to read and use .env files
 dotenv-cli==2.0.1
+
+# linting
+flake8==3.8.4
