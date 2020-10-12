@@ -15,9 +15,6 @@ from tilesgis.draw_helpers import render_shapes_to_figure
 #     'MultiPolygon',
 #     'GeometryCollection'
 
-## NOTE these three classes are from https://github.com/benjimin/descartes/blob/master/descartes/patch.py
-# it's basically the only code I could find that does this -_-
-
 
 def test_render_polygon():
     # this is a building with many yards, see https://www.openstreetmap.org/relation/56880
@@ -37,7 +34,6 @@ def test_render_polygon():
         lonmin=13.3613,
         lonmax=13.3768,
     )
-
     fig = render_shapes_to_figure(
         extent, [
             (multipolygon, dict(
@@ -63,7 +59,6 @@ def test_render_polygon():
     pyplot.show()
     fig.savefig('image.png')
 
-
     from matplotlib.backends.backend_agg import FigureCanvasAgg
 
     canvas = FigureCanvasAgg(fig)
@@ -74,7 +69,7 @@ def test_render_polygon():
     from tilesgis.__main__ import save_to_geoTIFF
     save_to_geoTIFF(extent, image_from_plot, 'magic_spree.tif')
 
-    assert fig == 3
+    assert list(fig.get_size_inches()) == [5.0, 5.0]
 
 
 def blabla_test_render_line():
@@ -103,5 +98,5 @@ def blabla_test_render_line():
                 ))
             ])
 
-    assert fig == 3
+    assert fig.shape == (1500, 1500, 3)
 

@@ -14,6 +14,9 @@ from tilesgis.types import ExtentDegrees, AreaData
 
 logger = logging.getLogger(__name__)
 
+# NOTE these three classes are from https://github.com/benjimin/descartes/blob/master/descartes/patch.py
+# it's basically the only code I could find that does this -_-
+
 
 class Polygon(object):
     # Adapt Shapely or GeoJSON/geo_interface polygons to a common interface
@@ -22,14 +25,17 @@ class Polygon(object):
             self.context = context
         else:
             self.context = getattr(context, '__geo_interface__', context)
+
     @property
     def geom_type(self):
         return (getattr(self.context, 'geom_type', None)
                 or self.context['type'])
+
     @property
     def exterior(self):
         return (getattr(self.context, 'exterior', None)
                 or self.context['coordinates'][0])
+
     @property
     def interiors(self):
         value = getattr(self.context, 'interiors', None)
@@ -43,6 +49,7 @@ def PolygonPath(polygon):
     geometric object"""
     this = Polygon(polygon)
     assert this.geom_type == 'Polygon'
+
     def coding(ob):
         # The codes will be all "LINETO" commands, except for "MOVETO"s at the
         # beginning of each subpath
