@@ -8,6 +8,7 @@ import numpy as np
 from shapely.geometry.base import BaseGeometry
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 from numpy import asarray, concatenate, ones
 
 from tilesgis.types import ExtentDegrees, AreaData
@@ -126,7 +127,11 @@ def map_to_image(
     return np.array(img)
 
 
-def render_shapes_to_figure(extent: ExtentDegrees, to_draw: List[Tuple[BaseGeometry, Dict]]) -> Figure:
+def render_shapes_to_figure(
+    extent: ExtentDegrees,
+    to_draw: List[Tuple[BaseGeometry, Dict]],
+    figsize: int = 1500
+        ) -> Figure:
     """Renders arbitrary Shapely geometrical objects to a Figure.
 
     This is quite ambitious!
@@ -134,7 +139,7 @@ def render_shapes_to_figure(extent: ExtentDegrees, to_draw: List[Tuple[BaseGeome
     the to_draw argument is a list of Shapely geometrical objects and rules to
     draw them (color, style, etc.)
     """
-    fig = Figure(figsize=(5, 5), dpi=300, frameon=False)
+    fig = Figure(figsize=(5, 5), dpi=figsize / 5, frameon=False)
     ax = fig.add_subplot()
     ax.set_ylim(extent.latmin, extent.latmax)
     ax.set_xlim(extent.lonmin, extent.lonmax)
@@ -149,11 +154,6 @@ def render_shapes_to_figure(extent: ExtentDegrees, to_draw: List[Tuple[BaseGeome
     fig.subplots_adjust(top=1)
     fig.subplots_adjust(right=1)
     fig.subplots_adjust(left=0)
-
-    ax.plot([extent.lonmin, extent.lonmax], [extent.latmin, extent.latmax])
-    ax.plot([extent.lonmin, extent.lonmax], [extent.latmin, extent.latmin])
-    ax.plot([extent.lonmin, extent.lonmin], [extent.latmin, extent.latmax])
-    ax.plot([extent.lonmax, extent.lonmax], [extent.latmin, extent.latmax])
 
     for geom, options in to_draw:
         if geom.type == 'LineString':
@@ -172,15 +172,18 @@ def render_shapes_to_figure(extent: ExtentDegrees, to_draw: List[Tuple[BaseGeome
             continue
 
         if geom.type == 'Polygon':
-            if 'line' not in options and 'vertex' not in options:
-                raise ValueError(
-                    "no 'vertex' nor 'line' option given to draw a LineString"
-                    )
-            if 'line' in options:
-                # draw the line
-                patch = PolygonPatch(geom, alpha=0.5, zorder=2)
-                ax.add_patch(patch)
+            patch = PolygonPatch(geom, **options)
+            ax.add_patch(patch)
             continue
         raise ValueError(f'Cannot draw type {geom.type}')
 
     return fig
+
+
+def figure_to_numpy(fig: Figure) -> np.ndarray:
+    """Render a matplotlib Figure to a Numpy array."""
+    canvas = FigureCanvasAgg(fig)
+    canvas.draw()
+    buf = canvas.buffer_rgba()
+    # convert to a NumPy array
+    return np.asarray(buf)

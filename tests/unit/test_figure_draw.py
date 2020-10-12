@@ -3,7 +3,7 @@ import json
 from shapely.geometry import shape
 
 from tilesgis.types import ExtentDegrees
-from tilesgis.draw_helpers import render_shapes_to_figure
+from tilesgis.draw_helpers import render_shapes_to_figure, figure_to_numpy
 
 # Geometry types
 #  'Point',
@@ -36,42 +36,19 @@ def test_render_polygon(tmpdir):
     )
     fig = render_shapes_to_figure(
         extent, [
-            (multipolygon, dict(
-                line=dict(color='#ff0000'),
-                vertex=dict(color='#00ff00'),
-                vertex_fmt='o',
-                )),
-            (multipolygon2, dict(
-                line=dict(color='#00ff00'),
-                vertex=dict(color='#a0ffa0'),
-                vertex_fmt='o',
-                )),
-            (multipolygon3, dict(
-                line=dict(color='#00ff00'),
-                vertex=dict(color='#a0ffa0'),
-                vertex_fmt='o',
-                ))
-            ])
+            (multipolygon, dict(facecolor='#ff0000', edgecolor='black', alpha=0.5)),
+            (multipolygon2, dict(facecolor='#00ff00', edgecolor='blue')),
+            (multipolygon3, dict(facecolor='yellow', edgecolor='blue')),
+            ]
+        )
+
     for target in ['img.png', 'img.svg']:
         target_file = tmpdir.join(target)
         fig.savefig(str(target_file))
-        assert target_file.size() > 5_000
+        assert target_file.size() > 4_500
 
-
-
-    import numpy as np
-
-    from matplotlib.backends.backend_agg import FigureCanvasAgg
-
-    canvas = FigureCanvasAgg(fig)
-    canvas.draw()
-    buf = canvas.buffer_rgba()
-    # convert to a NumPy array
-    image_from_plot = np.asarray(buf)
-    from tilesgis.__main__ import save_to_geoTIFF
-    save_to_geoTIFF(extent, image_from_plot, 'magic_spree.tif')
-
-    assert list(fig.get_size_inches()) == [5.0, 5.0]
+    image_from_plot = figure_to_numpy(fig)
+    assert image_from_plot.shape == (1500, 1500, 4)
 
 
 def blabla_test_render_line():
