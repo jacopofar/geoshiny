@@ -1,25 +1,41 @@
 from os import environ
 import logging
-from typing import Dict, Tuple
+from typing import Dict, List
 
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from tilesgis.types import AreaData, OSMNode, ExtentDegrees, OSMRelation, OSMWay, RelMemberType
-
-# TODO now it opens a connection every time, but here it's not a problem
-
+from tilesgis.types import (
+    AreaData,
+    OSMNode,
+    ExtentDegrees,
+    OSMRelation,
+    OSMWay,
+    RelMemberType,
+)
 
 logger = logging.getLogger(__name__)
+
+
+QUERY_CHUNK_SIZE = 500_000
 
 
 def _get_connection():
     return psycopg2.connect(dsn=environ['PGIS_CONN_STR'])
 
 
-def _integrate_missing_nodes_by_ids(missing_nodes: Tuple, nodes: Dict[int, OSMNode]) -> None:
+def _integrate_missing_nodes_by_ids(missing_nodes: List[int], nodes: Dict[int, OSMNode]) -> None:
     logger.debug(f'Retrieving and adding {len(missing_nodes)} missing nodes')
     if len(missing_nodes) == 0:
+        return
+    if len(missing_nodes) > QUERY_CHUNK_SIZE:
+        logger.debug(f'Too many nodes, {missing_nodes}, splitting in chunks')
+        for i in range(0, len(missing_nodes), QUERY_CHUNK_SIZE):
+            logger.debug(f'Processing chunk {i} - { i + QUERY_CHUNK_SIZE}')
+            _integrate_missing_nodes_by_ids(
+                missing_nodes[i: i + QUERY_CHUNK_SIZE],
+                nodes
+            )
         return
     with _get_connection() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
@@ -61,7 +77,7 @@ def add_missing_nodes(nodes: Dict[int, OSMNode], ways: Dict[int, OSMWay]) -> Non
             if n_id not in nodes:
                 missing_nodes.add(n_id)
 
-    _integrate_missing_nodes_by_ids(tuple(missing_nodes), nodes)
+    _integrate_missing_nodes_by_ids(list(missing_nodes), nodes)
 
 
 def add_missing_nodes_and_ways(
@@ -114,7 +130,7 @@ def add_missing_nodes_and_ways(
         conn.close()
     logger.debug('Ways integrated, now adding the nodes')
 
-    _integrate_missing_nodes_by_ids(tuple(missing_nodes_ids), nodes)
+    _integrate_missing_nodes_by_ids(list(missing_nodes_ids), nodes)
 
     # now ways and nodes are added
     # but some of these ways may not have all the needed nodes, so fix it

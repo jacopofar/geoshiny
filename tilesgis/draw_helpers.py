@@ -2,16 +2,17 @@ import json
 import logging
 from typing import List, Dict, Tuple
 
-from PIL import Image, ImageDraw
-from matplotlib import pyplot
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
-import numpy as np
-from shapely.geometry.base import BaseGeometry
-from shapely.geometry import shape
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
-from matplotlib.backends.backend_agg import FigureCanvasAgg
+import numpy as np
 from numpy import asarray, concatenate, ones
+from osgeo import gdal
+from osgeo import osr
+from shapely.geometry.base import BaseGeometry
+from shapely.geometry import shape
+
 
 from tilesgis.types import ExtentDegrees, AreaData
 
@@ -96,45 +97,13 @@ def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: 
     return x, y
 
 
-def map_to_image(
-    extent: ExtentDegrees,
-    data: AreaData,
-    point_callback=None,
-    way_callback=None,
-    relation_callback=None,
-        ) -> np.ndarray:
-    img = Image.new('RGB', (800, 800), (0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    ways_to_draw = []
-
-    if way_callback is not None:
-        for w in data.ways.values():
-            color = way_callback(w)
-            if color is not None:
-                ways_to_draw.append((w.nodes, color))
-
-    for way, color in ways_to_draw:
-        for id1, id2 in zip(way, way[1:]):
-            n1 = data.nodes.get(id1)
-            n2 = data.nodes.get(id2)
-            if n1 is None or n2 is None:
-                continue
-            # now n1 and n2 are two nodes connected in a way
-            x1, y1 = coord_to_pixel(n1.lat, n1.lon, img.size[0], img.size[1], extent)
-            x2, y2 = coord_to_pixel(n2.lat, n2.lon, img.size[0], img.size[1], extent)
-            draw.line((x1, y1, x2, y2), fill=color)  # type: ignore
-
-    pyplot.show()
-    return np.array(img)
-
-
 def map_to_figure(
     extent: ExtentDegrees,
     data: AreaData,
     point_callback=None,
     way_callback=None,
     relation_callback=None,
+    figsize=1500,
         ) -> Figure:
 
     to_draw = []
@@ -161,7 +130,7 @@ def map_to_figure(
                     shape(json.loads(r.geoJSON)),
                     draw_options,
                     ))
-    return render_shapes_to_figure(extent, to_draw)
+    return render_shapes_to_figure(extent, to_draw, figsize)
 
 
 def render_shapes_to_figure(
@@ -185,7 +154,6 @@ def render_shapes_to_figure(
     ax.set_xmargin(0.0)
     ax.set_ymargin(0.0)
     ax.set_axis_off()
-    ax.invert_yaxis()
 
     fig.subplots_adjust(bottom=0)
     fig.subplots_adjust(top=1)
@@ -213,5 +181,46 @@ def figure_to_numpy(fig: Figure) -> np.ndarray:
     canvas = FigureCanvasAgg(fig)
     canvas.draw()
     buf = canvas.buffer_rgba()
-    # convert to a NumPy array
-    return np.asarray(buf)
+    # convert to a NumPy array, flip to deal with the y axis
+    return np.flipud(np.asarray(buf))
+
+
+def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
+    """Save a Numpy image as a geoTIFF for the given extent.
+
+    The image is expected to be flipped on the Y axis, as is the case
+    when using the functions in this module.
+
+    Currently the image must be a square otherwise is stretched,
+    notice that using the extent metadata it will look fine even when the
+    extent is not square at all.
+
+    Parameters
+    ----------
+    bbox : ExtentDegrees
+        The extent for this image
+    image : numpy.ndarray
+        The image, as a ndarray of shape N, N, 3
+    fname : str
+        The ouput path, relative or absolute
+    """
+    nx, ny = image.shape[:2]
+    # this is because the image is distorted if not square
+    assert nx == ny, 'Image is not a square'
+    xres = (bbox.lonmax - bbox.lonmin) / nx
+    yres = (bbox.latmax - bbox.latmin) / ny
+    geotransform = (bbox.lonmin, xres, 0, bbox.latmax, 0, -yres)
+
+    dst_ds = gdal.GetDriverByName('GTiff').Create(fname, ny, nx, 3, gdal.GDT_Byte)
+
+    srs = osr.SpatialReference()            # establish encoding
+    srs.ImportFromEPSG(4326)                # WGS84 lat/long (in degrees)
+    dst_ds.SetGeoTransform(geotransform)    # specify coords
+    dst_ds.SetProjection(srs.ExportToWkt())  # export coords to the file
+    # image uses cartesian coordinates, swap to graphics coordinates
+    # which means to invert Y axis
+    img = np.flip(image, (0))
+    dst_ds.GetRasterBand(1).WriteArray(img[:, :,  0])
+    dst_ds.GetRasterBand(2).WriteArray(img[:, :,  1])
+    dst_ds.GetRasterBand(3).WriteArray(img[:, :,  2])
+    dst_ds.FlushCache()
