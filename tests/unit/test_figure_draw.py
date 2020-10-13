@@ -1,82 +1,23 @@
-import logging
+import json
 
-from osgeo import gdal
-from osgeo import osr
-import numpy as np
+from shapely.geometry import shape
 
-from tilesgis.types import (
-    ExtentDegrees, OSMRelation,
-    OSMWay,
-)
-from tilesgis.parse_osm_xml import xml_to_map_obj
-from tilesgis.database_extract import data_from_extent
-from tilesgis.draw_helpers import map_to_image
+from tilesgis.types import ExtentDegrees
+from tilesgis.draw_helpers import render_shapes_to_figure, figure_to_numpy
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s %(levelname)s: %(message)s',
-)
-
-logger = logging.getLogger(__name__)
+# Geometry types
+#  'Point',
+#     'LineString',
+#     'LinearRing',
+#     'Polygon',
+#     'MultiPoint',
+#     'MultiLineString',
+#     'MultiPolygon',
+#     'GeometryCollection'
 
 
-def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
-    nx, ny = image.shape[:2]
-    # this is because the image is distorted if not square
-    assert nx == ny
-    xres = (bbox.lonmax - bbox.lonmin) / nx
-    yres = (bbox.latmax - bbox.latmin) / ny
-    geotransform = (bbox.lonmin, xres, 0, bbox.latmax, 0, -yres)
-
-    dst_ds = gdal.GetDriverByName('GTiff').Create(fname, ny, nx, 3, gdal.GDT_Byte)
-
-    srs = osr.SpatialReference()            # establish encoding
-    srs.ImportFromEPSG(4326)                # WGS84 lat/long (in degrees)
-    dst_ds.SetGeoTransform(geotransform)    # specify coords
-    dst_ds.SetProjection(srs.ExportToWkt())  # export coords to the file
-    # image uses cartesian coordinates, swap to graphics coordinates
-    # which means to invert Y axis
-    img = np.flip(image, (0))
-    dst_ds.GetRasterBand(1).WriteArray(img[:, :,  0])
-    dst_ds.GetRasterBand(2).WriteArray(img[:, :,  1])
-    dst_ds.GetRasterBand(3).WriteArray(img[:, :,  2])
-    dst_ds.FlushCache()
-
-
-def asphalt_way_callback(w: OSMWay):
-    if w.attributes is None:
-        return
-    if w.attributes.get('surface') == 'asphalt':
-        return (128, 128, 128)
-
-
-def any_way_callback(w: OSMWay):
-    if w.attributes is not None:
-        logger.info(w.attributes)
-    return (250, 250, 250)
-
-
-def any_rel_callback(r: OSMRelation):
-    return (250, 250, 250)
-
-
-if __name__ == '__main__':
-    # this cover most of Berlin, takes 5 minutes
-    # e = ExtentDegrees(
-    #     latmin=52.4650,
-    #     latmax=52.5805,
-    #     lonmin=13.2911,
-    #     lonmax=13.5249
-    # )
-    # d = data_from_extent(e)
-    # img = asphalt_map(d, e)
-    # save_to_geoTIFF(e, img, 'all_berlin.db.asphalt.tif')
-
-    import json
-    from shapely.geometry import shape
-    from tilesgis.draw_helpers import render_shapes_to_figure, figure_to_numpy
-
-
+def test_render_polygon(tmpdir):
+    # this is a building with many yards, see https://www.openstreetmap.org/relation/56880
     line_geojson = '{"type":"Polygon","coordinates":[[[13.3730741,52.528892399],[13.3732394,52.528739999],[13.3733324,52.528769599],[13.3734522,52.528810199],[13.3736096,52.528858799],[13.3744697,52.529166499],[13.3747036,52.529250199],[13.3748861,52.529311299],[13.3749662,52.529338699],[13.3745283,52.529799099],[13.3742478,52.529694699],[13.374134,52.529808599],[13.3737474,52.529675299],[13.373759,52.529665399],[13.3738839,52.529534099],[13.3736457,52.529450199],[13.3735978,52.529432699],[13.3738416,52.529166699],[13.3730741,52.528892399]],[[13.3733161,52.528932899],[13.3735506,52.529015099],[13.3736102,52.528954699],[13.3733767,52.528872999],[13.3733161,52.528932899]],[[13.3736913,52.529063299],[13.3738527,52.529120799],[13.3739092,52.529059099],[13.3737474,52.529001599],[13.3736913,52.529063299]],[[13.3738146,52.529369699],[13.3738877,52.529395999],[13.373992,52.529289999],[13.3739195,52.529263899],[13.3738146,52.529369699]],[[13.3739585,52.529161699],[13.374125,52.529221599],[13.3741824,52.529159999],[13.3740189,52.529101199],[13.3739585,52.529161699]],[[13.3739754,52.529504299],[13.3742818,52.529615199],[13.3744435,52.529445099],[13.3741371,52.529335599],[13.3739754,52.529504299]],[[13.3742729,52.529277899],[13.3744951,52.529357999],[13.3745516,52.529295799],[13.374334,52.529217499],[13.3742729,52.529277899]],[[13.3744009,52.529653699],[13.3744945,52.529685499],[13.3746104,52.529557999],[13.3745186,52.529527799],[13.3744009,52.529653699]],[[13.374605,52.529450799],[13.3746828,52.529479599],[13.3747424,52.529415999],[13.3746646,52.529386499],[13.374605,52.529450799]]]}'
     multipolygon = shape(json.loads(line_geojson))
 
@@ -100,29 +41,41 @@ if __name__ == '__main__':
             (multipolygon3, dict(facecolor='yellow', edgecolor='blue')),
             ]
         )
-    fig.savefig('image.png')
-    exit()
+
+    for target in ['img.png', 'img.svg']:
+        target_file = tmpdir.join(target)
+        fig.savefig(str(target_file))
+        assert target_file.size() > 4_500
+
+    image_from_plot = figure_to_numpy(fig)
+    assert image_from_plot.shape == (1500, 1500, 4)
 
 
+def blabla_test_render_line():
+    # TODO parse a line GeoJSON and generate a figure from it
+    # then also check that it's possible to generate a numpy image from the Figure
+    # and an SVG
 
+    # this is a piece of the Spree river, https://www.openstreetmap.org/way/159534658
+    line_geojson = '{"type":"LineString","coordinates":[[13.4078083,52.515006699],[13.4070379,52.515127199],[13.4062402,52.515462899],[13.4056683,52.515804299],[13.4051136,52.516166199],[13.4043756,52.516775399],[13.4040558,52.517071899],[13.4026181,52.518489099],[13.402347,52.518765299],[13.4018846,52.519206299],[13.4014628,52.519658399],[13.4009832,52.520096599],[13.4004115,52.520529899],[13.4002128,52.520705699],[13.3999649,52.520930299],[13.3996217,52.521141099],[13.3990601,52.521381799],[13.3980572,52.521627699],[13.3974686,52.521757799],[13.3967584,52.521922799],[13.3956494,52.522172099],[13.3943258,52.522294899],[13.3940589,52.522308699],[13.3929723,52.522386099],[13.3916795,52.522482899],[13.3911731,52.522456499],[13.3894839,52.522337699],[13.3891755,52.522310899],[13.3883252,52.522207199],[13.3879702,52.522111199],[13.3869355,52.521506999],[13.3859434,52.520953799],[13.3854117,52.520654199],[13.3850207,52.520431499],[13.3844628,52.520183399],[13.3836045,52.519903499],[13.3822098,52.519491299],[13.380815,52.519217099],[13.3802539,52.519198999],[13.3795705,52.519177999],[13.3791705,52.519210699],[13.3788613,52.519235899],[13.3785521,52.519290699],[13.3782498,52.519360399],[13.3778964,52.519467799],[13.3776164,52.519564199],[13.377339,52.519682199],[13.3770764,52.519811199],[13.3767768,52.520010999],[13.3766403,52.520166099],[13.3766184,52.520201099],[13.3765316,52.520332899],[13.3764866,52.520442899],[13.3764599,52.520553899],[13.3764475,52.520634699],[13.3763841,52.520939099],[13.3763198,52.521164099],[13.3762202,52.521419199],[13.3760536,52.521627799],[13.3759333,52.521779499],[13.3758349,52.521858399],[13.3757714,52.521912899],[13.3755624,52.522053799],[13.3752777,52.522230999],[13.3749477,52.522381699],[13.3745065,52.522585799],[13.3740215,52.522753199],[13.3735194,52.522899099],[13.3731158,52.522971399],[13.3726896,52.523019999],[13.3722127,52.523057099]]}'
+    multiline = shape(json.loads(line_geojson))
 
+    # this extent contains the above feature in its North-East corner
+    extent = ExtentDegrees(
+        latmin=52.5098,
+        latmax=52.5633,
+        lonmin=13.2976,
+        lonmax=13.4203,
+    )
 
-    way_callback = any_way_callback
+    fig = render_shapes_to_figure(
+        extent, [
+            (multiline, dict(
+                line=dict(color='#ff0000'),
+                vertex=dict(color='#00ff00'),
+                vertex_fmt='o',
+                ))
+            ])
 
-    osm_name = 'museum_insel_berlin.osm'
-    xml_data, extent = xml_to_map_obj(osm_name)
-    xml_img = map_to_image(extent, xml_data, way_callback=way_callback, relation_callback=any_rel_callback)
-    save_to_geoTIFF(extent, xml_img, 'image_from_xml.tif')
+    assert fig.shape == (1500, 1500, 3)
 
-    db_data = data_from_extent(extent)
-    db_img = map_to_image(extent, db_data, way_callback=way_callback, relation_callback=any_rel_callback)
-    save_to_geoTIFF(extent, db_img, 'image_from_db.tif')
-
-    # for osm_name in ['new_york_park.osm', 'sample.osm', 'museum_insel_berlin.osm']:
-    #     d, e = xml_to_map_obj(osm_name)
-    #     img = asphalt_map(d, e)
-    #     save_to_geoTIFF(e, img, osm_name + '.asphalt.tif')
-
-    #     d2 = data_from_extent(e)
-    #     img2 = asphalt_map(d2, e)
-    #     save_to_geoTIFF(e, img2, osm_name + '.db.asphalt.tif')

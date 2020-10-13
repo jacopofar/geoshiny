@@ -10,14 +10,14 @@ TRAN_4326_TO_3857 = Transformer.from_crs("EPSG:4326", "EPSG:3857")
 
 @dataclass
 class ExtentDegrees:
-    """Bounding box in WGS84 degrees."""
+    """Bounding box in WGS84 degrees. Aka EPSG:4326"""
     latmin: float
     latmax: float
     lonmin: float
     lonmax: float
 
     def enlarged(self, factor: float):
-        """Calculate an extent larger in all directions.
+        """Calculate an extent enlarged in all directions.
 
         Parameters
         ----------
