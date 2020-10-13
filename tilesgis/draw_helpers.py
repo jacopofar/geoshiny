@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # it's basically the only code I could find that does this -_-
 
 
-class Polygon(object):
+class Polygon:
     # Adapt Shapely or GeoJSON/geo_interface polygons to a common interface
     def __init__(self, context):
         if hasattr(context, 'interiors'):
@@ -70,7 +70,7 @@ def PolygonPath(polygon):
     return Path(vertices, codes)
 
 
-def PolygonPatch(polygon, **kwargs):
+def create_polygon_patch(polygon, **kwargs):
     """Constructs a matplotlib patch from a geometric object
 
     The `polygon` may be a Shapely or GeoJSON-like object with or without holes.
@@ -161,18 +161,21 @@ def render_shapes_to_figure(
     fig.subplots_adjust(left=0)
 
     for geom, options in to_draw:
-        if geom.type == 'LineString':
-            x, y = geom.xy
-            ax.plot(x, y, **options)
-            continue
+        try:
+            if geom.type == 'LineString':
+                x, y = geom.xy
+                # patch_artist is used to have a filling
+                ax.plot(x, y, **options)
+                continue
 
-        if geom.type == 'Polygon':
-            patch = PolygonPatch(geom, **options)
-            ax.add_patch(patch)
-            continue
+            if geom.type == 'Polygon':
+                patch = create_polygon_patch(geom, **options)
+                ax.add_patch(patch)
+                continue
 
-        raise ValueError(f'Cannot draw type {geom.type}')
-
+            raise ValueError(f'Cannot draw type {geom.type}')
+        except AttributeError:
+            logger.exception(f'Error drawing {geom}, options: {options}')
     return fig
 
 
@@ -194,6 +197,8 @@ def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
     Currently the image must be a square otherwise is stretched,
     notice that using the extent metadata it will look fine even when the
     extent is not square at all.
+
+    Alpha channel is ignored if it exists.
 
     Parameters
     ----------
@@ -220,7 +225,7 @@ def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
     # image uses cartesian coordinates, swap to graphics coordinates
     # which means to invert Y axis
     img = np.flip(image, (0))
-    dst_ds.GetRasterBand(1).WriteArray(img[:, :,  0])
-    dst_ds.GetRasterBand(2).WriteArray(img[:, :,  1])
-    dst_ds.GetRasterBand(3).WriteArray(img[:, :,  2])
+    dst_ds.GetRasterBand(1).WriteArray(img[:, :, 0])
+    dst_ds.GetRasterBand(2).WriteArray(img[:, :, 1])
+    dst_ds.GetRasterBand(3).WriteArray(img[:, :, 2])
     dst_ds.FlushCache()

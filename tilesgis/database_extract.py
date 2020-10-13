@@ -29,7 +29,7 @@ def _integrate_missing_nodes_by_ids(missing_nodes: List[int], nodes: Dict[int, O
     if len(missing_nodes) == 0:
         return
     if len(missing_nodes) > QUERY_CHUNK_SIZE:
-        logger.debug(f'Too many nodes, {missing_nodes}, splitting in chunks')
+        logger.debug(f'Too many nodes, {len(missing_nodes)}, splitting in chunks')
         for i in range(0, len(missing_nodes), QUERY_CHUNK_SIZE):
             logger.debug(f'Processing chunk {i} - { i + QUERY_CHUNK_SIZE}')
             _integrate_missing_nodes_by_ids(
@@ -129,7 +129,7 @@ def add_missing_nodes_and_ways(
                     )
         conn.close()
     logger.debug('Ways integrated, now adding the nodes')
-
+    # TODO this can be removed, every processing is based on geoJSON now
     _integrate_missing_nodes_by_ids(list(missing_nodes_ids), nodes)
 
     # now ways and nodes are added
