@@ -1,8 +1,6 @@
 import logging
 
-from osgeo import gdal
-from osgeo import osr
-import numpy as np
+from shapely.geometry.base import BaseGeometry
 
 from tilesgis.types import (
     ExtentDegrees, OSMRelation,
@@ -10,7 +8,7 @@ from tilesgis.types import (
 )
 from tilesgis.parse_osm_xml import xml_to_map_obj
 from tilesgis.database_extract import data_from_extent
-from tilesgis.draw_helpers import map_to_image
+from tilesgis.draw_helpers import figure_to_numpy, save_to_geoTIFF, data_to_representation, representations_to_figure
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -18,29 +16,6 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
-
-def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
-    nx, ny = image.shape[:2]
-    # this is because the image is distorted if not square
-    assert nx == ny
-    xres = (bbox.lonmax - bbox.lonmin) / nx
-    yres = (bbox.latmax - bbox.latmin) / ny
-    geotransform = (bbox.lonmin, xres, 0, bbox.latmax, 0, -yres)
-
-    dst_ds = gdal.GetDriverByName('GTiff').Create(fname, ny, nx, 3, gdal.GDT_Byte)
-
-    srs = osr.SpatialReference()            # establish encoding
-    srs.ImportFromEPSG(4326)                # WGS84 lat/long (in degrees)
-    dst_ds.SetGeoTransform(geotransform)    # specify coords
-    dst_ds.SetProjection(srs.ExportToWkt())  # export coords to the file
-    # image uses cartesian coordinates, swap to graphics coordinates
-    # which means to invert Y axis
-    img = np.flip(image, (0))
-    dst_ds.GetRasterBand(1).WriteArray(img[:, :,  0])
-    dst_ds.GetRasterBand(2).WriteArray(img[:, :,  1])
-    dst_ds.GetRasterBand(3).WriteArray(img[:, :,  2])
-    dst_ds.FlushCache()
 
 
 def asphalt_way_callback(w: OSMWay):
@@ -60,6 +35,71 @@ def any_rel_callback(r: OSMRelation):
     return (250, 250, 250)
 
 
+def grey_all_callback(x):
+    return dict(color='grey', alpha=0.5)
+
+
+def nice_representation(w: OSMWay):
+    if w.attributes is None:
+        return
+
+    if w.attributes.get('bicycle') == 'designated':
+        return dict(path_type='bike')
+    if 'water' in w.attributes:
+        return dict(surface_type='water')
+
+    if w.attributes.get('landuse') == 'grass':
+        return dict(surface_type='grass')
+    if w.attributes.get('leisure') == 'park':
+        return dict(surface_type='grass')
+    if w.attributes.get('natural') == 'scrub':
+        return dict(surface_type='wild grass')
+
+    if 'building' in w.attributes and w.attributes['building'] != 'no':
+        if 'building:levels' not in w.attributes:
+            return dict(surface_type='building')
+        else:
+            try:
+                level_num = float(w.attributes['building:levels'])
+            except ValueError:
+                logger.debug(f"Invalid number of floors: {w.attributes['building:levels']}")
+                return dict(surface_type='building')
+            return dict(surface_type='building', floors=level_num)
+
+
+def nice_renderer(d: dict, shape: BaseGeometry = None):
+    water_style = dict(facecolor='blue', edgecolor='darkblue', linewidth=0.1)
+    grass_style = dict(facecolor='green', linewidth=0.1)
+    wild_grass_style = dict(facecolor='darkgreen', linewidth=0.1)
+
+    missing_levels = dict(facecolor='red', edgecolor='darkred', linewidth=0.05)
+    tall_build = dict(facecolor='black', edgecolor='black', linewidth=0.05)
+    low_build = dict(facecolor='grey', edgecolor='darkgrey', linewidth=0.05)
+
+    bike_path = dict(linestyle='dashed', color='yellow', linewidth=0.1)
+
+    if d.get('path_type') == 'bike':
+        return bike_path
+
+    surface_type = d.get('surface_type')
+    if surface_type == 'building':
+        if 'floors' not in d:
+            return missing_levels
+        else:
+            if d['floors'] > 2.0:
+                return tall_build
+            else:
+                return low_build
+
+    if surface_type == 'grass':
+        return grass_style
+    if surface_type == 'wild grass':
+        return wild_grass_style
+    if surface_type == 'water':
+        from shapely import affinity
+        return water_style, affinity.rotate(shape, 90, origin='centroid')
+
+
 if __name__ == '__main__':
     # this cover most of Berlin, takes 5 minutes
     # e = ExtentDegrees(
@@ -71,6 +111,35 @@ if __name__ == '__main__':
     # d = data_from_extent(e)
     # img = asphalt_map(d, e)
     # save_to_geoTIFF(e, img, 'all_berlin.db.asphalt.tif')
+
+    # area covered in original_piece.png
+    extent = ExtentDegrees(
+        latmin=52.5275,
+        latmax=52.5356,
+        lonmin=13.3613,
+        lonmax=13.3768,
+    )
+    # most of Berlin
+    # extent = ExtentDegrees(
+    #     latmin=52.4215,
+    #     latmax=52.6106,
+    #     lonmin=13.1180,
+    #     lonmax=13.6368,
+    # )
+
+    db_data = data_from_extent(extent)
+    reprs = data_to_representation(db_data, way_callback=nice_representation, relation_callback=nice_representation)
+    db_img = representations_to_figure(reprs, extent, nice_renderer, figsize=2500)
+    # db_img = map_to_figure(extent, db_data, way_callback=nice_callback, relation_callback=nice_callback, figsize=2500)
+
+    db_img.savefig('piece_generated.png')
+    db_img.savefig('piece_generated.svg')
+
+    rasterized = figure_to_numpy(db_img)
+    save_to_geoTIFF(extent, rasterized, 'piece_generated.tif')
+
+    exit()
+
 
     import json
     from shapely.geometry import shape
@@ -87,12 +156,7 @@ if __name__ == '__main__':
     multipolygon3 = shape(json.loads(lines_geojson3))
 
     # this extent contains the above feature in its North-East corner
-    extent = ExtentDegrees(
-        latmin=52.5275,
-        latmax=52.5356,
-        lonmin=13.3613,
-        lonmax=13.3768,
-    )
+
     fig = render_shapes_to_figure(
         extent, [
             (multipolygon, dict(facecolor='#ff0000', edgecolor='black', alpha=0.5)),
@@ -101,9 +165,6 @@ if __name__ == '__main__':
             ]
         )
     fig.savefig('image.png')
-    exit()
-
-
 
 
 

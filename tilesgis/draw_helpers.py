@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Dict, Tuple
+from typing import Dict, Callable, List, Tuple
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -97,7 +97,70 @@ def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: 
     return x, y
 
 
-def map_to_figure(
+def data_to_representation(
+    data: AreaData,
+    point_callback=None,
+    way_callback=None,
+    relation_callback=None,
+        ) -> List[Tuple[str, dict]]:
+
+    representations = []
+    # TODO what to do with points?
+
+    if way_callback is not None:
+        for w in data.ways.values():
+            if w.geoJSON is None:
+                continue
+            representation = way_callback(w)
+            if representation is not None:
+                representations.append((
+                    w.geoJSON,
+                    representation,
+                    ))
+
+    if relation_callback is not None:
+        for r in data.relations.values():
+            if r.geoJSON is None:
+                continue
+            representation = relation_callback(r)
+            if representation is not None:
+                representations.append((
+                    r.geoJSON,
+                    representation,
+                    ))
+    return representations
+
+
+def representations_to_figure(
+    representations: List[Tuple[str, dict]],
+    extent: ExtentDegrees,
+    representer: Callable,
+    figsize: int = 1500,
+        ) -> Figure:
+
+    to_draw = []
+
+    for representation in representations:
+        shapely_obj = shape(json.loads(representation[0]))
+        res = representer(representation[1], shape=shapely_obj)
+        # TODO not very beautiful, what's the best way to allow an optional return value?
+        # maybe having two callbacks, one that receives and return the shape
+        # and the other for pure rendering?
+        # also, in this second case it should return a list of shapes and representations
+        # Nah, probably better to have independent pipelines for (shapes, repr) tuples
+        # allowing filtering, aggregations and whatnot
+        if type(res) == tuple:
+            draw_options, new_shape = res
+        else:
+            draw_options, new_shape = res, None
+        to_draw.append((
+            shapely_obj if new_shape is None else new_shape,
+            draw_options,
+            ))
+    return render_shapes_to_figure(extent, to_draw, figsize)
+
+
+def old_map_to_figure(
     extent: ExtentDegrees,
     data: AreaData,
     point_callback=None,
