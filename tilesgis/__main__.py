@@ -128,7 +128,7 @@ if __name__ == '__main__':
     # )
 
     db_data = data_from_extent(extent)
-    reprs = data_to_representation(db_data, way_callback=nice_representation, relation_callback=nice_representation)
+    reprs = data_to_representation(db_data, entity_callback=nice_representation)
     db_img = representations_to_figure(reprs, extent, nice_renderer, figsize=2500)
     # db_img = map_to_figure(extent, db_data, way_callback=nice_callback, relation_callback=nice_callback, figsize=2500)
 

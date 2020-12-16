@@ -99,30 +99,28 @@ def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: 
 
 def data_to_representation(
     data: AreaData,
-    point_callback=None,
-    way_callback=None,
-    relation_callback=None,
+    entity_callback=None,
         ) -> List[Tuple[str, dict]]:
 
     representations = []
     # TODO what to do with points?
 
-    if way_callback is not None:
+    if entity_callback is not None:
         for w in data.ways.values():
             if w.geoJSON is None:
                 continue
-            representation = way_callback(w)
+            representation = entity_callback(w)
             if representation is not None:
                 representations.append((
                     w.geoJSON,
                     representation,
                     ))
 
-    if relation_callback is not None:
+    if entity_callback is not None:
         for r in data.relations.values():
             if r.geoJSON is None:
                 continue
-            representation = relation_callback(r)
+            representation = entity_callback(r)
             if representation is not None:
                 representations.append((
                     r.geoJSON,
@@ -157,42 +155,6 @@ def representations_to_figure(
             shapely_obj if new_shape is None else new_shape,
             draw_options,
             ))
-    return render_shapes_to_figure(extent, to_draw, figsize)
-
-
-def old_map_to_figure(
-    extent: ExtentDegrees,
-    data: AreaData,
-    point_callback=None,
-    way_callback=None,
-    relation_callback=None,
-    figsize=1500,
-        ) -> Figure:
-
-    to_draw = []
-    # TODO what to do with points?
-
-    if way_callback is not None:
-        for w in data.ways.values():
-            if w.geoJSON is None:
-                continue
-            draw_options = way_callback(w)
-            if draw_options is not None:
-                to_draw.append((
-                    shape(json.loads(w.geoJSON)),
-                    draw_options,
-                    ))
-
-    if relation_callback is not None:
-        for r in data.relations.values():
-            if r.geoJSON is None:
-                continue
-            draw_options = relation_callback(r)
-            if draw_options is not None:
-                to_draw.append((
-                    shape(json.loads(r.geoJSON)),
-                    draw_options,
-                    ))
     return render_shapes_to_figure(extent, to_draw, figsize)
 
 

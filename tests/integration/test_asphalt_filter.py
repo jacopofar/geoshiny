@@ -19,7 +19,7 @@ def test_asphalt_filter(tmpdir):
             return dict(facecolor='grey')
 
     map_data, extent = xml_to_map_obj('tests/sampledata/museum_insel_berlin.osm')
-    reprs = data_to_representation(map_data, way_callback=asphalt_repr)
+    reprs = data_to_representation(map_data, entity_callback=asphalt_repr)
     fig = representations_to_figure(reprs, extent, asphalt_repr, figsize=800)
 
     img = figure_to_numpy(fig)
@@ -34,7 +34,7 @@ def test_asphalt_filter(tmpdir):
         if way.attributes is not None:
             way.attributes['surface'] = 'not asphalt'
 
-    reprs_stripped = data_to_representation(map_data_stripped, way_callback=asphalt_repr)
+    reprs_stripped = data_to_representation(map_data_stripped, entity_callback=asphalt_repr)
     fig_stripped = representations_to_figure(reprs_stripped, extent, asphalt_repr, figsize=800)
     img_stripped = figure_to_numpy(fig_stripped)
 
