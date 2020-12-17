@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Callable, List, Tuple
+from typing import Dict, Callable, Iterable, List, Tuple
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -129,8 +129,8 @@ def data_to_representation(
     return representations
 
 
-def representations_to_figure(
-    representations: List[Tuple[str, dict]],
+def representation_to_figure(
+    representations: Iterable[Tuple[str, dict]],
     extent: ExtentDegrees,
     representer: Callable,
     figsize: int = 1500,

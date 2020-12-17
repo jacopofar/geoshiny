@@ -8,7 +8,7 @@ from tilesgis.types import (
 )
 from tilesgis.parse_osm_xml import xml_to_map_obj
 from tilesgis.database_extract import data_from_extent
-from tilesgis.draw_helpers import figure_to_numpy, save_to_geoTIFF, data_to_representation, representations_to_figure
+from tilesgis.draw_helpers import figure_to_numpy, save_to_geoTIFF, data_to_representation, representation_to_figure
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
     db_data = data_from_extent(extent)
     reprs = data_to_representation(db_data, entity_callback=nice_representation)
-    db_img = representations_to_figure(reprs, extent, nice_renderer, figsize=2500)
+    db_img = representation_to_figure(reprs, extent, nice_renderer, figsize=2500)
     # db_img = map_to_figure(extent, db_data, way_callback=nice_callback, relation_callback=nice_callback, figsize=2500)
 
     db_img.savefig('piece_generated.png')
