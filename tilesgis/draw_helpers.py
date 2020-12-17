@@ -1,6 +1,7 @@
 import json
 import logging
-from typing import Dict, Callable, Iterable, List, Tuple
+from io import TextIOWrapper
+from typing import Dict, Callable, Iterable, List, Tuple, Union
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -97,24 +98,17 @@ def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: 
     return x, y
 
 
-def data_to_representation(
+def _representation_iterator(
     data: AreaData,
-    entity_callback=None,
-        ) -> List[Tuple[str, dict]]:
-
-    representations = []
-    # TODO what to do with points?
-
+    entity_callback,
+        ):
     if entity_callback is not None:
         for w in data.ways.values():
             if w.geoJSON is None:
                 continue
             representation = entity_callback(w)
             if representation is not None:
-                representations.append((
-                    w.geoJSON,
-                    representation,
-                    ))
+                yield (w.geoJSON, representation)
 
     if entity_callback is not None:
         for r in data.relations.values():
@@ -122,11 +116,48 @@ def data_to_representation(
                 continue
             representation = entity_callback(r)
             if representation is not None:
-                representations.append((
-                    r.geoJSON,
-                    representation,
-                    ))
+                yield (r.geoJSON, representation)
+
+
+def data_to_representation(
+    data: AreaData,
+    entity_callback: Callable,
+        ) -> List[Tuple[str, dict]]:
+
+    representations = []
+    # TODO what to do with points?
+
+    for geoJSON, repr in _representation_iterator(data, entity_callback):
+        representations.append((geoJSON, repr))
     return representations
+
+
+def data_to_representation_file(
+    data: AreaData,
+    fh: TextIOWrapper,
+    entity_callback: Callable,
+):
+    for geoJSON, repr in _representation_iterator(data, entity_callback):
+        fh.write(json.dumps(dict(
+            geojson=geoJSON,
+            representation=repr,
+        )))
+        fh.write('\n')
+
+
+def file_to_representation(target_file: Union[str, TextIOWrapper]):
+    # TODO how to do it nicely? maybe an helper to open the file
+    if isinstance(target_file, str):
+        with open(target_file, 'r') as fh:
+            for line in fh:
+                obj = json.loads(line)
+                yield (obj['geojson'], obj['representation'])
+    elif isinstance(target_file, TextIOWrapper):
+        for line in target_file:
+            obj = json.loads(line)
+            yield (obj['geojson'], obj['representation'])
+    else:
+        raise TypeError(f'Invalid type {type(target_file)}')
 
 
 def representation_to_figure(
