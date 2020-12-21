@@ -96,8 +96,9 @@ def nice_renderer(d: dict, shape: BaseGeometry = None):
     if surface_type == 'wild grass':
         return wild_grass_style
     if surface_type == 'water':
-        from shapely import affinity
-        return water_style, affinity.rotate(shape, 90, origin='centroid')
+        # from shapely import affinity
+        # return water_style, affinity.rotate(shape, 90, origin='centroid')
+        return water_style
 
 
 if __name__ == '__main__':
@@ -112,31 +113,45 @@ if __name__ == '__main__':
     # img = asphalt_map(d, e)
     # save_to_geoTIFF(e, img, 'all_berlin.db.asphalt.tif')
 
-    # area covered in original_piece.png
+    # area covered in original_piece.png, takes 38s
     extent = ExtentDegrees(
         latmin=52.5275,
         latmax=52.5356,
         lonmin=13.3613,
         lonmax=13.3768,
     )
-    # most of Berlin
-    # extent = ExtentDegrees(
-    #     latmin=52.4215,
-    #     latmax=52.6106,
-    #     lonmin=13.1180,
-    #     lonmax=13.6368,
-    # )
+    # most of Berlin, takes:
+    # 6 minutes to read all the data
+    # 4 minutes to generate the figure
+    # 2 minutes to generate the PNG
+    # 2 minutes to generate the SVG
+    # 1 minute to generate the geoTIFF
+    extent = ExtentDegrees(
+        latmin=52.4215,
+        latmax=52.6106,
+        lonmin=13.1180,
+        lonmax=13.6368,
+    )
 
     db_data = data_from_extent(extent)
+    logger.info('Data has been read, processing...')
     reprs = data_to_representation(db_data, entity_callback=nice_representation)
-    db_img = representation_to_figure(reprs, extent, nice_renderer, figsize=2500)
+    logger.info('Representation has been calculated, generating figure...')
+
+    db_img = representation_to_figure(reprs, extent, nice_renderer, figsize=3000)
     # db_img = map_to_figure(extent, db_data, way_callback=nice_callback, relation_callback=nice_callback, figsize=2500)
+    logger.info('Figure is ready, persisting to PNG...')
 
     db_img.savefig('piece_generated.png')
+    logger.info('Figure is ready, persisting to SVG...')
+
     db_img.savefig('piece_generated.svg')
+
+    logger.info('Figure is ready, persisting to geoTIFF...')
 
     rasterized = figure_to_numpy(db_img)
     save_to_geoTIFF(extent, rasterized, 'piece_generated.tif')
+    logger.info('done!')
 
     exit()
 

@@ -231,7 +231,7 @@ def render_shapes_to_figure(
 
             raise ValueError(f'Cannot draw type {geom.type}')
         except AttributeError:
-            logger.exception(f'Error drawing {geom}, options: {options}')
+            logger.exception(f'Error drawing, will skip {geom}, options: {options}')
     return fig
 
 
