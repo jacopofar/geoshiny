@@ -49,7 +49,7 @@ class Polygon:
         return value
 
 
-def PolygonPath(polygon):
+def to_polygon_path(polygon):
     """Constructs a compound matplotlib path from a Shapely or GeoJSON-like
     geometric object"""
     this = Polygon(polygon)
@@ -82,15 +82,14 @@ def create_polygon_patch(polygon, **kwargs):
       >>> patch = PolygonPatch(b, fc='blue', ec='blue', alpha=0.5)
       >>> axis.add_patch(patch)
     """
-    return PathPatch(PolygonPath(polygon), **kwargs)
+    return PathPatch(to_polygon_path(polygon), **kwargs)
 
 
 def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: ExtentDegrees) -> Tuple[float, float]:
     """Convert lat/lon coordinate to a pixel coordinate for a given area.
 
     NOTE: this assumes the extent is very small, enough to not introduce errors
-    due to curvature. For this project is usually no bigger than a few blocks,
-    but a city should be fine too.
+    due to curvature. For this project is usually no bigger than a city.
     """
     x = (lon - extent.lonmin) * width / (extent.lonmax - extent.lonmin)
     y = (lat - extent.latmin) * height / (extent.latmax - extent.latmin)
@@ -201,7 +200,7 @@ def representation_to_figure(
         # also, in this second case it should return a list of shapes and representations
         # Nah, probably better to have independent pipelines for (shapes, repr) tuples
         # allowing filtering, aggregations and whatnot
-        if type(res) == tuple:
+        if isinstance(res, tuple):
             draw_options, new_shape = res
         else:
             draw_options, new_shape = res, None
@@ -240,10 +239,12 @@ def render_shapes_to_figure(
     fig.subplots_adjust(left=0)
 
     for geom, options in to_draw:
+        # the possible types are FeatureCollection, Feature, Point, LineString, MultiPoint,
+        # Polygon, MultiLineString, MultiPolygon, and GeometryCollection
+        # however I found only these three so far
         try:
             if geom.type == 'LineString':
                 x, y = geom.xy
-                # patch_artist is used to have a filling
                 ax.plot(x, y, **options)
                 continue
 
@@ -258,8 +259,10 @@ def render_shapes_to_figure(
                 continue
 
             raise ValueError(f'Cannot draw type {geom.type}')
+
         except AttributeError:
             logger.exception(f'Error drawing, will skip {geom}, options: {options}')
+
     return fig
 
 

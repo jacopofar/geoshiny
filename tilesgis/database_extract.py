@@ -59,7 +59,7 @@ def _integrate_missing_nodes_by_ids(missing_nodes: List[int], nodes: Dict[int, O
                         for (k, v) in row._asdict().items()
                         if v is not None and k not in ('lat', 'lon', 'id', 'osm_id', 'way')
                     },
-                    )
+                )
     conn.close()
 
 
@@ -125,7 +125,7 @@ def add_missing_nodes_and_ways(
                             dict(zip(row.tags[::2], row.tags[1::2]))
                             if row.tags is not None
                             else None
-                            )
+                        )
                     )
         conn.close()
     logger.debug('Ways integrated, now adding the nodes')
@@ -181,7 +181,7 @@ def nodes_in_extent(extent: ExtentDegrees) -> Dict[int, OSMNode]:
                         if v is not None and k not in ('lat', 'lon', 'id', 'osm_id', 'way', 'geojson')
                     },
                     geoJSON=row.geojson,
-                    )
+                )
     conn.close()
     logger.debug(f'Found {len(retval)} nodes')
     return retval
@@ -334,7 +334,7 @@ def relations_in_extent(extent: ExtentDegrees) -> Dict[int, OSMRelation]:
                         dict(zip(row.tags[::2], row.tags[1::2]))
                         if row.tags is not None
                         else None
-                        ),
+                    ),
                     geoJSON=row.geojson,
                 )
 
