@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import json
 import logging
 from io import TextIOWrapper
@@ -13,7 +14,6 @@ from osgeo import gdal
 from osgeo import osr
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import shape
-
 
 from tilesgis.types import ExtentDegrees, AreaData
 
@@ -119,6 +119,34 @@ def _representation_iterator(
                 yield (r.geoJSON, representation)
 
 
+@contextmanager
+def _read_file(target_file: Union[str, TextIOWrapper]):
+    if isinstance(target_file, str):
+        try:
+            fh = open(target_file, 'r')
+            yield fh
+        finally:
+            fh.close()
+    elif isinstance(target_file, TextIOWrapper):
+        yield target_file
+    else:
+        raise TypeError(f'Invalid type {type(target_file)}')
+
+
+@contextmanager
+def _write_file(target_file: Union[str, TextIOWrapper]):
+    if isinstance(target_file, str):
+        try:
+            fh = open(target_file, 'w')
+            yield fh
+        finally:
+            fh.close()
+    elif isinstance(target_file, TextIOWrapper):
+        yield target_file
+    else:
+        raise TypeError(f'Invalid type {type(target_file)}')
+
+
 def data_to_representation(
     data: AreaData,
     entity_callback: Callable,
@@ -134,30 +162,23 @@ def data_to_representation(
 
 def data_to_representation_file(
     data: AreaData,
-    fh: TextIOWrapper,
+    target_file: Union[str, TextIOWrapper],
     entity_callback: Callable,
 ):
-    for geoJSON, repr in _representation_iterator(data, entity_callback):
-        fh.write(json.dumps(dict(
-            geojson=geoJSON,
-            representation=repr,
-        )))
-        fh.write('\n')
+    with _write_file(target_file) as fh:
+        for geoJSON, repr in _representation_iterator(data, entity_callback):
+            fh.write(json.dumps(dict(
+                geojson=geoJSON,
+                representation=repr,
+            )))
+            fh.write('\n')
 
 
 def file_to_representation(target_file: Union[str, TextIOWrapper]):
-    # TODO how to do it nicely? maybe an helper to open the file
-    if isinstance(target_file, str):
-        with open(target_file, 'r') as fh:
-            for line in fh:
-                obj = json.loads(line)
-                yield (obj['geojson'], obj['representation'])
-    elif isinstance(target_file, TextIOWrapper):
-        for line in target_file:
+    with _read_file(target_file) as fh:
+        for line in fh:
             obj = json.loads(line)
             yield (obj['geojson'], obj['representation'])
-    else:
-        raise TypeError(f'Invalid type {type(target_file)}')
 
 
 def representation_to_figure(
