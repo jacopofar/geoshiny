@@ -60,6 +60,7 @@ class OSMNode:
     lat: float
     lon: float
     attributes: Optional[Dict[str, str]] = None
+    geoJSON: Optional[str] = None
 
 
 @dataclass

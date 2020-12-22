@@ -160,7 +160,8 @@ def nodes_in_extent(extent: ExtentDegrees) -> Dict[int, OSMNode]:
                         n.id,
                         n.lat,
                         n.lon,
-                        p.*
+                        p.*,
+                        ST_AsGeoJSON(ST_Transform(p.way, 4326)) AS geojson
                     FROM
                         planet_osm_nodes n
                             LEFT JOIN planet_osm_point p
@@ -177,8 +178,9 @@ def nodes_in_extent(extent: ExtentDegrees) -> Dict[int, OSMNode]:
                     attributes={
                         k: v
                         for (k, v) in row._asdict().items()
-                        if v is not None and k not in ('lat', 'lon', 'id', 'osm_id', 'way')
+                        if v is not None and k not in ('lat', 'lon', 'id', 'osm_id', 'way', 'geojson')
                     },
+                    geoJSON=row.geojson,
                     )
     conn.close()
     logger.debug(f'Found {len(retval)} nodes')

@@ -102,21 +102,19 @@ def _representation_iterator(
     data: AreaData,
     entity_callback,
         ):
-    if entity_callback is not None:
-        for w in data.ways.values():
-            if w.geoJSON is None:
-                continue
-            representation = entity_callback(w)
-            if representation is not None:
-                yield (w.geoJSON, representation)
+    for w in data.ways.values():
+        if w.geoJSON is None:
+            continue
+        representation = entity_callback(w)
+        if representation is not None:
+            yield (w.geoJSON, representation)
 
-    if entity_callback is not None:
-        for r in data.relations.values():
-            if r.geoJSON is None:
-                continue
-            representation = entity_callback(r)
-            if representation is not None:
-                yield (r.geoJSON, representation)
+    for r in data.relations.values():
+        if r.geoJSON is None:
+            continue
+        representation = entity_callback(r)
+        if representation is not None:
+            yield (r.geoJSON, representation)
 
 
 @contextmanager
