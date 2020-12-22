@@ -24,7 +24,9 @@ def messy_renderer(d: dict, shape: BaseGeometry = None):
     if shape.type == 'LineString':
         return dict(color='red', alpha=(1.0 / d['val']))
     if shape.type == 'Polygon':
-        return dict(color='red', alpha=(1.0 / d['val']))
+        return dict(color='green', alpha=(1.0 / d['val']))
+    if shape.type == 'Point':
+        return dict(color='blue', alpha=(1.0 / d['val']))
     raise ValueError(f'Unknown shape type {shape.type}')
 
 

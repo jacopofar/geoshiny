@@ -115,6 +115,12 @@ def _representation_iterator(
         representation = entity_callback(r)
         if representation is not None:
             yield (r.geoJSON, representation)
+    for p in data.nodes.values():
+        if p.geoJSON is None:
+            continue
+        representation = entity_callback(p)
+        if representation is not None:
+            yield (p.geoJSON, representation)
 
 
 @contextmanager
@@ -151,8 +157,6 @@ def data_to_representation(
         ) -> List[Tuple[str, dict]]:
 
     representations = []
-    # TODO what to do with points?
-
     for geoJSON, repr in _representation_iterator(data, entity_callback):
         representations.append((geoJSON, repr))
     return representations
@@ -246,6 +250,11 @@ def render_shapes_to_figure(
             if geom.type == 'Polygon':
                 patch = create_polygon_patch(geom, **options)
                 ax.add_patch(patch)
+                continue
+
+            if geom.type == 'Point':
+                x, y = geom.xy
+                ax.scatter(x, y, **options)
                 continue
 
             raise ValueError(f'Cannot draw type {geom.type}')
