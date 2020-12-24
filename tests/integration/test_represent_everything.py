@@ -32,11 +32,11 @@ def messy_renderer(d: dict, shape: BaseGeometry = None):
 
 def test_persist_and_retrieve(tmpdir):
     extent = ExtentDegrees(
-        latmin=52.50319,
-        latmax=52.50507,
-        lonmin=13.22676,
-        lonmax=13.23066,
-        )
+        latmin=52.5275,
+        latmax=52.5356,
+        lonmin=13.3613,
+        lonmax=13.3768,
+    )
     data = data_from_extent(extent)
     target_file = tmpdir.join('representation.jsonl')
     with open(target_file, 'w') as tfh:

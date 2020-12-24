@@ -81,12 +81,22 @@ def test_persist_and_retrieve(tmpdir):
         )
     data = data_from_extent(extent)
     target_file = tmpdir.join('representation.jsonl')
+    target_file2 = tmpdir.join('representation2.jsonl')
+
     with open(target_file, 'w') as tfh:
         data_to_representation_file(
             data,
             tfh,
             entity_callback=nice_representation,
         )
+    data_to_representation_file(
+        data,
+        str(target_file2),
+        entity_callback=nice_representation,
+    )
+    # ensure passing an handler and a file name brings the same result
+    assert filecmp.cmp(str(target_file), str(target_file2), shallow=False)
+
     reprs = data_to_representation(
         data,
         entity_callback=nice_representation,
@@ -96,16 +106,27 @@ def test_persist_and_retrieve(tmpdir):
         extent,
         nice_renderer,
         figsize=1000,
-        )
+    )
     img2 = representation_to_figure(
         file_to_representation(str(target_file)),
         extent,
         nice_renderer,
         figsize=1000,
-        )
+    )
+    img3 = representation_to_figure(
+        file_to_representation(open(target_file, 'r')),
+        extent,
+        nice_renderer,
+        figsize=1000,
+    )
     t1 = str(tmpdir.join('image1.png'))
     t2 = str(tmpdir.join('image2.png'))
+    t3 = str(tmpdir.join('image3.png'))
 
     img1.savefig(t1)
     img2.savefig(t2)
+    img3.savefig(t3)
+
     assert filecmp.cmp(t1, t2, shallow=False)
+    # reading from a file handler gives the same result
+    assert filecmp.cmp(t2, t3, shallow=False)

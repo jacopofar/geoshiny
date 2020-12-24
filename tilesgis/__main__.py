@@ -126,12 +126,12 @@ if __name__ == '__main__':
     # 2 minutes to generate the PNG
     # 2 minutes to generate the SVG
     # 1 minute to generate the geoTIFF
-    extent = ExtentDegrees(
-        latmin=52.4215,
-        latmax=52.6106,
-        lonmin=13.1180,
-        lonmax=13.6368,
-    )
+    # extent = ExtentDegrees(
+    #     latmin=52.4215,
+    #     latmax=52.6106,
+    #     lonmin=13.1180,
+    #     lonmax=13.6368,
+    # )
 
     db_data = data_from_extent(extent)
     logger.info('Data has been read, processing...')
