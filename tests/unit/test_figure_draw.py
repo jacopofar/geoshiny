@@ -2,8 +2,8 @@ import json
 
 from shapely.geometry import shape
 
-from tilesgis.types import ExtentDegrees
-from tilesgis.draw_helpers import render_shapes_to_figure, figure_to_numpy
+from geocrazy.types import ExtentDegrees
+from geocrazy.draw_helpers import render_shapes_to_figure, figure_to_numpy
 
 # Geometry types
 #  'Point',

@@ -3,9 +3,9 @@ from typing import Union
 
 from shapely.geometry.base import BaseGeometry
 
-from tilesgis.types import ExtentDegrees, OSMWay, OSMRelation, OSMNode
-from tilesgis.database_extract import data_from_extent
-from tilesgis.draw_helpers import (
+from geocrazy.types import ExtentDegrees, OSMWay, OSMRelation, OSMNode
+from geocrazy.database_extract import data_from_extent
+from geocrazy.draw_helpers import (
     data_to_representation,
     data_to_representation_file,
     file_to_representation,

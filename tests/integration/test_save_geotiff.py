@@ -1,7 +1,7 @@
 import numpy as np
 
-from tilesgis.draw_helpers import save_to_geoTIFF
-from tilesgis.parse_osm_xml import xml_to_map_obj
+from geocrazy.draw_helpers import save_to_geoTIFF
+from geocrazy.parse_osm_xml import xml_to_map_obj
 
 
 def test_save_geotiff(tmpdir):

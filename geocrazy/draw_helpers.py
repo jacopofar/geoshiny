@@ -15,7 +15,7 @@ from osgeo import osr
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import shape
 
-from tilesgis.types import ExtentDegrees, AreaData
+from geocrazy.types import ExtentDegrees, AreaData
 
 logger = logging.getLogger(__name__)
 

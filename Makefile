@@ -1,8 +1,8 @@
 mypy:
-	python3 -m mypy tilesgis
+	python3 -m mypy geocrazy
 
 test:
-	python3 -m pytest --cov=tilesgis --cov-report html
+	python3 -m pytest --cov=geocrazy --cov-report html
 
 install-test-all:
 	rm -rf .venv
@@ -14,4 +14,4 @@ install-test-all:
 	# NOTE: shapely must be installed like this or it breaks :/
 	# also https://github.com/python-poetry/poetry/issues/1316
 	.venv/bin/python3 -m pip install --no-binary Shapely -r requirements.txt
-	.venv/bin/python3 -m pytest --cov=tilesgis --cov-report html
+	.venv/bin/python3 -m pytest --cov=geocrazy --cov-report html

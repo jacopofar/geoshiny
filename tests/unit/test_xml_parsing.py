@@ -1,5 +1,5 @@
-from tilesgis.types import ExtentDegrees
-from tilesgis.parse_osm_xml import xml_to_map_obj
+from geocrazy.types import ExtentDegrees
+from geocrazy.parse_osm_xml import xml_to_map_obj
 
 
 def test_xml_is_parsed():

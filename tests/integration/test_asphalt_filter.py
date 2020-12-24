@@ -3,9 +3,9 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
-from tilesgis.parse_osm_xml import xml_to_map_obj
-from tilesgis.types import OSMWay
-from tilesgis.draw_helpers import figure_to_numpy, data_to_representation, representation_to_figure
+from geocrazy.parse_osm_xml import xml_to_map_obj
+from geocrazy.types import OSMWay
+from geocrazy.draw_helpers import figure_to_numpy, data_to_representation, representation_to_figure
 
 
 @pytest.mark.skip(reason='shape generation from XML is not implemented yet')

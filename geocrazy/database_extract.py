@@ -5,7 +5,7 @@ from typing import Dict, List
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 
-from tilesgis.types import (
+from geocrazy.types import (
     AreaData,
     OSMNode,
     ExtentDegrees,

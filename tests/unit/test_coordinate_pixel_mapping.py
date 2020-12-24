@@ -1,7 +1,7 @@
 from pytest import approx
 
-from tilesgis.draw_helpers import coord_to_pixel
-from tilesgis.types import ExtentDegrees
+from geocrazy.draw_helpers import coord_to_pixel
+from geocrazy.types import ExtentDegrees
 
 
 def test_coord_to_pixel():

@@ -1,4 +1,4 @@
-from tilesgis.types import ExtentDegrees
+from geocrazy.types import ExtentDegrees
 
 
 def test_extent_operations():

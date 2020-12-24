@@ -1,7 +1,7 @@
 from typing import Tuple
 from xml.dom.minidom import parse
 
-from tilesgis.types import (
+from geocrazy.types import (
     AreaData,
     ExtentDegrees,
     OSMNode,

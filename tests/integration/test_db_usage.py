@@ -1,5 +1,5 @@
-from tilesgis.types import ExtentDegrees
-from tilesgis.database_extract import (
+from geocrazy.types import ExtentDegrees
+from geocrazy.database_extract import (
     add_missing_nodes,
     data_from_extent,
     nodes_in_extent,
