@@ -1,6 +1,6 @@
 
 import json
-
+import subprocess
 
 def test_aaaaa_weird_anomaly():
     """Okay, this is weird.
@@ -36,7 +36,7 @@ def test_aaaaa_weird_anomaly():
     runtime errors, also the problem arises only when you import things in a
     precise order.
 
-    After some attempts I cam out with this test, the smaller I could produce.
+    After some attempts I came out with this test, the smaller I could produce.
 
     The name is deliberate to run it as the first test of all and ensure no
     one else imported the libraries, or it may not work.
@@ -55,4 +55,30 @@ def test_aaaaa_weird_anomaly():
     # it the setup is broken, it raises ValueError: Null geometry has no type
     # and logs the error 'shapely.geos:geos.py:252 Hole is not a LinearRing'
     assert multipolygon.type == 'Polygon'
+
+    # NOTE: a few months after writing this test the order broke
+    # ON THE OTHER WAY AROUND. Since I can import only in one order and the
+    # effect is global, this makes things harder
+    # so here I use this abomination to have a clean interpreter
+    # to run
+    proc = subprocess.Popen(
+        "python3 -c 'from shapely.geometry import shape;import osgeo'",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
+        universal_newlines=True,
+    )
+    std_out, std_err = proc.communicate()
+    # if there's an error, the trick works
+    if "ModuleNotFoundError: No module named '_gdal'" in std_err:
+        proc = subprocess.Popen(
+            """python3 -c 'from geocrazy import import_hell;import_hell.import_gdal_shapely(wait=False);from shapely.geometry import shape;import osgeo; print("import workaround successful")'""", # NOQA
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            universal_newlines=True,
+        )
+        std_out, std_err = proc.communicate()
+
+        assert 'import workaround successful' in std_out
 

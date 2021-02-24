@@ -1,5 +1,9 @@
 import logging
 
+from geocrazy import import_hell
+import_hell.import_gdal_shapely()
+
+from osgeo import gdal
 from shapely.geometry.base import BaseGeometry
 
 from geocrazy.types import (
