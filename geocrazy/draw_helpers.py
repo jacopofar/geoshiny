@@ -15,7 +15,7 @@ from osgeo import osr
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import shape
 
-from geocrazy.types import ExtentDegrees, AreaData, ObjectStyle
+from geocrazy.types import ExtentDegrees, AreaData, ObjectStyle, OSMEntity
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: 
 
 def _representation_iterator(
     data: AreaData,
-    entity_callback,
+    entity_callback: Callable[[OSMEntity], dict],
         ):
     for w in data.ways.values():
         if w.geoJSON is None:

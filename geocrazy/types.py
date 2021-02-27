@@ -79,18 +79,26 @@ class ExtentDegrees:
             lonmax=lonmax,
         )
 
+@dataclass
+class OSMEntity:
+    """General entity expected by the render callback.
+
+    This is not supposed to be created directly, is just a simple way to
+    have the equivalent of an interface in Python without messy ABCs
+    """
+    geoJSON: Optional[str] = None
 
 @dataclass
-class OSMNode:
+class OSMNode(OSMEntity):
     """OSM Node object."""
-    lat: float
-    lon: float
+    lat: Optional[float] = None
+    lon: Optional[float] = None
     attributes: Optional[Dict[str, str]] = None
     geoJSON: Optional[str] = None
 
 
 @dataclass
-class OSMWay:
+class OSMWay(OSMEntity):
     """OSM Way object."""
     nodes: List[int] = field(default_factory=list)
     attributes: Optional[Dict[str, str]] = None
@@ -103,7 +111,7 @@ class RelMemberType(Enum):
 
 
 @dataclass
-class OSMRelation:
+class OSMRelation(OSMEntity):
     """OSM Relation object."""
     members: List[Tuple[RelMemberType, int, str]] = field(default_factory=list)
     attributes: Optional[Dict[str, str]] = None
