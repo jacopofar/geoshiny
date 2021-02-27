@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import json
 import logging
 from io import TextIOWrapper
-from typing import Dict, Callable, Iterable, List, Tuple, Union
+from typing import Any, Dict, Callable, Iterable, List, Optional, Tuple, Union
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -15,7 +15,7 @@ from osgeo import osr
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import shape
 
-from geocrazy.types import ExtentDegrees, AreaData
+from geocrazy.types import ExtentDegrees, AreaData, ObjectStyle
 
 logger = logging.getLogger(__name__)
 
@@ -125,11 +125,8 @@ def _representation_iterator(
 @contextmanager
 def _read_file(target_file: Union[str, TextIOWrapper]):
     if isinstance(target_file, str):
-        try:
-            fh = open(target_file, 'r')
+        with open(target_file, 'r') as fh:
             yield fh
-        finally:
-            fh.close()
     elif isinstance(target_file, TextIOWrapper):
         yield target_file
     else:
@@ -139,11 +136,8 @@ def _read_file(target_file: Union[str, TextIOWrapper]):
 @contextmanager
 def _write_file(target_file: Union[str, TextIOWrapper]):
     if isinstance(target_file, str):
-        try:
-            fh = open(target_file, 'w')
+        with open(target_file, 'w') as fh:
             yield fh
-        finally:
-            fh.close()
     elif isinstance(target_file, TextIOWrapper):
         yield target_file
     else:
@@ -185,7 +179,7 @@ def file_to_representation(target_file: Union[str, TextIOWrapper]):
 def representation_to_figure(
     representations: Iterable[Tuple[str, dict]],
     extent: ExtentDegrees,
-    representer: Callable,
+    representer: Callable[[dict, Any], Optional[ObjectStyle]],
     figsize: int = 1500,
         ) -> Figure:
 
@@ -193,19 +187,13 @@ def representation_to_figure(
 
     for representation in representations:
         shapely_obj = shape(json.loads(representation[0]))
-        res = representer(representation[1], shape=shapely_obj)
-        # TODO not very beautiful, what's the best way to allow an optional return value?
-        # maybe having two callbacks, one that receives and return the shape
-        # and the other for pure rendering?
-        # also, in this second case it should return a list of shapes and representations
-        # Nah, probably better to have independent pipelines for (shapes, repr) tuples
-        # allowing filtering, aggregations and whatnot
-        if isinstance(res, tuple):
-            draw_options, new_shape = res
-        else:
-            draw_options, new_shape = res, None
+        res = representer(representation[1], shapely_obj)
+        if res is None:
+            continue
+        new_shape = res.shape if res.shape is not None else shapely_obj
+        draw_options = res.get_drawing_options()
         to_draw.append((
-            shapely_obj if new_shape is None else new_shape,
+            new_shape,
             draw_options,
             ))
     return render_shapes_to_figure(extent, to_draw, figsize)

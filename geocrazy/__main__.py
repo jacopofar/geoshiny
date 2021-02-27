@@ -1,14 +1,14 @@
 import logging
 
 from geocrazy import import_hell
-import_hell.import_gdal_shapely()
+import_hell.import_gdal_shapely(wait=False)
 
 from osgeo import gdal
 from shapely.geometry.base import BaseGeometry
 
 from geocrazy.types import (
     ExtentDegrees, OSMRelation,
-    OSMWay,
+    OSMWay, ObjectStyle,
 )
 from geocrazy.parse_osm_xml import xml_to_map_obj
 from geocrazy.database_extract import data_from_extent
@@ -71,16 +71,16 @@ def nice_representation(w: OSMWay):
             return dict(surface_type='building', floors=level_num)
 
 
-def nice_renderer(d: dict, shape: BaseGeometry = None):
-    water_style = dict(facecolor='blue', edgecolor='darkblue', linewidth=0.1)
-    grass_style = dict(facecolor='green', linewidth=0.1)
-    wild_grass_style = dict(facecolor='darkgreen', linewidth=0.1)
+def nice_renderer(d: dict, shape: BaseGeometry):
+    water_style = ObjectStyle(facecolor='blue', edgecolor='darkblue', linewidth=0.1)
+    grass_style = ObjectStyle(facecolor='green', linewidth=0.1)
+    wild_grass_style = ObjectStyle(facecolor='darkgreen', linewidth=0.1)
 
-    missing_levels = dict(facecolor='red', edgecolor='darkred', linewidth=0.05)
-    tall_build = dict(facecolor='black', edgecolor='black', linewidth=0.05)
-    low_build = dict(facecolor='grey', edgecolor='darkgrey', linewidth=0.05)
+    missing_levels = ObjectStyle(facecolor='red', edgecolor='darkred', linewidth=0.05)
+    tall_build = ObjectStyle(facecolor='black', edgecolor='black', linewidth=0.05)
+    low_build = ObjectStyle(facecolor='grey', edgecolor='darkgrey', linewidth=0.05)
 
-    bike_path = dict(linestyle='dashed', color='yellow', linewidth=0.1)
+    bike_path = ObjectStyle(linestyle='dashed', color='yellow', linewidth=0.1)
 
     if d.get('path_type') == 'bike':
         return bike_path

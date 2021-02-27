@@ -3,7 +3,7 @@ from typing import Union
 
 from shapely.geometry.base import BaseGeometry
 
-from geocrazy.types import ExtentDegrees, OSMWay, OSMRelation, OSMNode
+from geocrazy.types import ExtentDegrees, OSMWay, OSMRelation, OSMNode, ObjectStyle
 from geocrazy.database_extract import data_from_extent
 from geocrazy.draw_helpers import (
     data_to_representation,
@@ -22,11 +22,11 @@ def universal_representation(e: Union[OSMWay, OSMRelation, OSMNode]):
 
 def messy_renderer(d: dict, shape: BaseGeometry = None):
     if shape.type == 'LineString':
-        return dict(color='red', alpha=(1.0 / d['val']))
+        return ObjectStyle(color='red', alpha=(1.0 / d['val']))
     if shape.type == 'Polygon':
-        return dict(color='green', alpha=(1.0 / d['val']))
+        return ObjectStyle(color='green', alpha=(1.0 / d['val']))
     if shape.type == 'Point':
-        return dict(color='blue', alpha=(1.0 / d['val']))
+        return ObjectStyle(color='blue', alpha=(1.0 / d['val']))
     raise ValueError(f'Unknown shape type {shape.type}')
 
 

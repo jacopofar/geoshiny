@@ -6,6 +6,7 @@ test:
 
 install-test-all:
 	rm -rf .venv
+	rm -rf htmlcov
 	python3 -m venv .venv
 	# necessary to ensure the latest pip which runs on Big Sur
 	# pip before 2020.3 has issues with it

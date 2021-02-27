@@ -2,7 +2,7 @@ import filecmp
 
 from shapely.geometry.base import BaseGeometry
 
-from geocrazy.types import ExtentDegrees, OSMWay
+from geocrazy.types import ExtentDegrees, OSMWay, ObjectStyle
 from geocrazy.database_extract import data_from_extent
 from geocrazy.draw_helpers import (
     data_to_representation,
@@ -40,15 +40,15 @@ def nice_representation(w: OSMWay):
 
 
 def nice_renderer(d: dict, shape: BaseGeometry = None):
-    water_style = dict(facecolor='blue', edgecolor='darkblue', linewidth=0.1)
-    grass_style = dict(facecolor='green', linewidth=0.1)
-    wild_grass_style = dict(facecolor='darkgreen', linewidth=0.1)
+    water_style = ObjectStyle(facecolor='blue', edgecolor='darkblue', linewidth=0.1)
+    grass_style = ObjectStyle(facecolor='green', linewidth=0.1)
+    wild_grass_style = ObjectStyle(facecolor='darkgreen', linewidth=0.1)
 
-    missing_levels = dict(facecolor='red', edgecolor='darkred', linewidth=0.05)
-    tall_build = dict(facecolor='black', edgecolor='black', linewidth=0.05)
-    low_build = dict(facecolor='grey', edgecolor='darkgrey', linewidth=0.05)
+    missing_levels = ObjectStyle(facecolor='red', edgecolor='darkred', linewidth=0.05)
+    tall_build = ObjectStyle(facecolor='black', edgecolor='black', linewidth=0.05)
+    low_build = ObjectStyle(facecolor='grey', edgecolor='darkgrey', linewidth=0.05)
 
-    bike_path = dict(linestyle='dashed', color='yellow', linewidth=0.1)
+    bike_path = ObjectStyle(linestyle='dashed', color='yellow', linewidth=0.1)
 
     if d.get('path_type') == 'bike':
         return bike_path

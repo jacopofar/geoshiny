@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
@@ -6,6 +6,32 @@ from pyproj import Transformer
 
 
 TRAN_4326_TO_3857 = Transformer.from_crs("EPSG:4326", "EPSG:3857")
+
+
+@dataclass
+class ObjectStyle:
+    """Style for any element on the map"""
+    facecolor: Optional[str] = None
+    edgecolor: Optional[str] = None
+    linewidth: Optional[float] = None
+    linestyle: Optional[str] = None
+    color: Optional[str] = None
+    alpha: Optional[float] = None
+    shape: Optional[str] = None
+
+    def get_drawing_options(self):
+        """Get the option to draw this element.
+
+        """
+        ret = {}
+        for field in fields(self):
+            if field.name == 'shape':
+                continue
+            value = getattr(self, field.name)
+            if value is not None:
+                ret[field.name] = value
+        return ret
+
 
 
 @dataclass
