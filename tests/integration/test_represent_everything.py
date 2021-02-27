@@ -21,13 +21,13 @@ def universal_representation(e: Union[OSMWay, OSMRelation, OSMNode]):
 
 
 def messy_renderer(d: dict, shape: BaseGeometry = None):
-    if shape.type == 'LineString':
-        return ObjectStyle(color='red', alpha=(1.0 / d['val']))
-    if shape.type == 'Polygon':
-        return ObjectStyle(color='green', alpha=(1.0 / d['val']))
-    if shape.type == 'Point':
-        return ObjectStyle(color='blue', alpha=(1.0 / d['val']))
-    raise ValueError(f'Unknown shape type {shape.type}')
+    if shape.type == "LineString":
+        return ObjectStyle(color="red", alpha=(1.0 / d["val"]))
+    if shape.type == "Polygon":
+        return ObjectStyle(color="green", alpha=(1.0 / d["val"]))
+    if shape.type == "Point":
+        return ObjectStyle(color="blue", alpha=(1.0 / d["val"]))
+    raise ValueError(f"Unknown shape type {shape.type}")
 
 
 def test_persist_and_retrieve(tmpdir):
@@ -38,8 +38,8 @@ def test_persist_and_retrieve(tmpdir):
         lonmax=13.3768,
     )
     data = data_from_extent(extent)
-    target_file = tmpdir.join('representation.jsonl')
-    with open(target_file, 'w') as tfh:
+    target_file = tmpdir.join("representation.jsonl")
+    with open(target_file, "w") as tfh:
         data_to_representation_file(
             data,
             tfh,
@@ -54,15 +54,15 @@ def test_persist_and_retrieve(tmpdir):
         extent,
         messy_renderer,
         figsize=1000,
-        )
+    )
     img2 = representation_to_figure(
         file_to_representation(str(target_file)),
         extent,
         messy_renderer,
         figsize=1000,
-        )
-    t1 = str(tmpdir.join('image1.png'))
-    t2 = str(tmpdir.join('image2.png'))
+    )
+    t1 = str(tmpdir.join("image1.png"))
+    t2 = str(tmpdir.join("image2.png"))
 
     img1.savefig(t1)
     img2.savefig(t2)

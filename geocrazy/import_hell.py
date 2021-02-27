@@ -2,6 +2,7 @@ import logging
 import subprocess
 import time
 
+
 def import_gdal_shapely(wait: bool = True):
     """Handle the case of an import order error.
 
@@ -29,8 +30,8 @@ def import_gdal_shapely(wait: bool = True):
     std_out, std_err = proc.communicate()
     if "ModuleNotFoundError: No module named '_gdal'" in std_err:
         logger = logging.getLogger(__name__)
-        logger.warning('Error importing shapely BEFORE osgeo :(')
-        logger.warning('As a workaround, the other order will be used')
+        logger.warning("Error importing shapely BEFORE osgeo :(")
+        logger.warning("As a workaround, the other order will be used")
         if wait:
             time.sleep(5)
         logger.warning(std_err)
@@ -38,4 +39,3 @@ def import_gdal_shapely(wait: bool = True):
             time.sleep(5)
         import osgeo
         from shapely.geometry import shape
-

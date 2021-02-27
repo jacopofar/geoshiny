@@ -35,18 +35,18 @@ def test_render_polygon(tmpdir):
         lonmax=13.3768,
     )
     fig = render_shapes_to_figure(
-        extent, [
-            (multipolygon, dict(facecolor='#ff0000', edgecolor='black', alpha=0.5)),
-            (multipolygon2, dict(facecolor='#00ff00', edgecolor='blue')),
-            (multipolygon3, dict(facecolor='yellow', edgecolor='blue')),
-            ]
-        )
+        extent,
+        [
+            (multipolygon, dict(facecolor="#ff0000", edgecolor="black", alpha=0.5)),
+            (multipolygon2, dict(facecolor="#00ff00", edgecolor="blue")),
+            (multipolygon3, dict(facecolor="yellow", edgecolor="blue")),
+        ],
+    )
 
-    for target in ['img.png', 'img.svg']:
+    for target in ["img.png", "img.svg"]:
         target_file = tmpdir.join(target)
         fig.savefig(str(target_file))
         assert target_file.size() > 4_500
 
     image_from_plot = figure_to_numpy(fig)
     assert image_from_plot.shape == (1500, 1500, 4)
-

@@ -21,34 +21,35 @@ QUERY_CHUNK_SIZE = 500_000
 
 
 def _get_connection():
-    return psycopg2.connect(dsn=environ['PGIS_CONN_STR'])
+    return psycopg2.connect(dsn=environ["PGIS_CONN_STR"])
 
 
-def _integrate_missing_nodes_by_ids(missing_nodes: List[int], nodes: Dict[int, OSMNode]) -> None:
-    logger.debug(f'Retrieving and adding {len(missing_nodes)} missing nodes')
+def _integrate_missing_nodes_by_ids(
+    missing_nodes: List[int], nodes: Dict[int, OSMNode]
+) -> None:
+    logger.debug(f"Retrieving and adding {len(missing_nodes)} missing nodes")
     if len(missing_nodes) == 0:
         return
     if len(missing_nodes) > QUERY_CHUNK_SIZE:
-        logger.debug(f'Too many nodes, {len(missing_nodes)}, splitting in chunks')
+        logger.debug(f"Too many nodes, {len(missing_nodes)}, splitting in chunks")
         for i in range(0, len(missing_nodes), QUERY_CHUNK_SIZE):
-            logger.debug(f'Processing chunk {i} - { i + QUERY_CHUNK_SIZE}')
+            logger.debug(f"Processing chunk {i} - { i + QUERY_CHUNK_SIZE}")
             _integrate_missing_nodes_by_ids(
-                missing_nodes[i: i + QUERY_CHUNK_SIZE],
-                nodes
+                missing_nodes[i : i + QUERY_CHUNK_SIZE], nodes
             )
         return
     with _get_connection() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute(
-                '''SELECT
+                """SELECT
                     n.id, n.lat, n.lon, p.*
                 FROM planet_osm_nodes n
                 LEFT JOIN planet_osm_point p
                     ON p.osm_id = n.id
                 WHERE
                     n.id IN %(node_ids)s
-                ''',
-                dict(node_ids=tuple(missing_nodes))
+                """,
+                dict(node_ids=tuple(missing_nodes)),
             )
             for row in cur:
                 nodes[row.id] = OSMNode(
@@ -57,7 +58,8 @@ def _integrate_missing_nodes_by_ids(missing_nodes: List[int], nodes: Dict[int, O
                     attributes={
                         k: v
                         for (k, v) in row._asdict().items()
-                        if v is not None and k not in ('lat', 'lon', 'id', 'osm_id', 'way')
+                        if v is not None
+                        and k not in ("lat", "lon", "id", "osm_id", "way")
                     },
                 )
     conn.close()
@@ -84,7 +86,7 @@ def add_missing_nodes_and_ways(
     nodes: Dict[int, OSMNode],
     ways: Dict[int, OSMWay],
     rels: Dict[int, OSMRelation],
-        ) -> None:
+) -> None:
     """Integrate a list of nodes and ways with ones missing from rels.
 
     Just as it happens with nodes and ways, a relation can contain nodes and
@@ -106,18 +108,20 @@ def add_missing_nodes_and_ways(
                 if m_id not in ways:
                     missing_ways_ids.add(m_id)
     logger.debug(
-        f'Found {len(missing_ways_ids)} ways and {len(missing_nodes_ids)} nodes'
-        ' missing')
+        f"Found {len(missing_ways_ids)} ways and {len(missing_nodes_ids)} nodes"
+        " missing"
+    )
     if len(missing_ways_ids) > 0:
         with _get_connection() as conn:
             with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
                 cur.execute(
-                    '''SELECT
+                    """SELECT
                         id, nodes, tags
                     FROM planet_osm_ways w
                     WHERE
-                        id IN %(way_ids)s''',
-                    dict(way_ids=tuple(missing_ways_ids)))
+                        id IN %(way_ids)s""",
+                    dict(way_ids=tuple(missing_ways_ids)),
+                )
                 for row in cur:
                     ways[row.id] = OSMWay(
                         nodes=row.nodes,
@@ -125,10 +129,10 @@ def add_missing_nodes_and_ways(
                             dict(zip(row.tags[::2], row.tags[1::2]))
                             if row.tags is not None
                             else None
-                        )
+                        ),
                     )
         conn.close()
-    logger.debug('Ways integrated, now adding the nodes')
+    logger.debug("Ways integrated, now adding the nodes")
     # TODO this can be removed, every processing is based on geoJSON now
     _integrate_missing_nodes_by_ids(list(missing_nodes_ids), nodes)
 
@@ -152,11 +156,11 @@ def data_from_extent(extent: ExtentDegrees) -> AreaData:
 
 def nodes_in_extent(extent: ExtentDegrees) -> Dict[int, OSMNode]:
     retval = {}
-    logger.debug(f'Searching for nodes in extent {extent}')
+    logger.debug(f"Searching for nodes in extent {extent}")
     with _get_connection() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute(
-                '''SELECT
+                """SELECT
                         n.id,
                         n.lat,
                         n.lon,
@@ -169,8 +173,9 @@ def nodes_in_extent(extent: ExtentDegrees) -> Dict[int, OSMNode]:
                     WHERE
                             p.way && st_makeenvelope(
                                 %(lonmin)s, %(latmin)s, %(lonmax)s, %(latmax)s
-                                , 3857);''',
-                extent.as_epsg3857())
+                                , 3857);""",
+                extent.as_epsg3857(),
+            )
             for row in cur:
                 retval[row.id] = OSMNode(
                     lat=row.lat / 10 ** 7,
@@ -178,12 +183,13 @@ def nodes_in_extent(extent: ExtentDegrees) -> Dict[int, OSMNode]:
                     attributes={
                         k: v
                         for (k, v) in row._asdict().items()
-                        if v is not None and k not in ('lat', 'lon', 'id', 'osm_id', 'way', 'geojson')
+                        if v is not None
+                        and k not in ("lat", "lon", "id", "osm_id", "way", "geojson")
                     },
                     geoJSON=row.geojson,
                 )
     conn.close()
-    logger.debug(f'Found {len(retval)} nodes')
+    logger.debug(f"Found {len(retval)} nodes")
     return retval
 
 
@@ -197,7 +203,7 @@ def ways_in_extent(extent: ExtentDegrees) -> Dict[int, OSMWay]:
     with _get_connection() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as cur:
             cur.execute(
-                '''SELECT
+                """SELECT
                         id,
                         nodes,
                         tags,
@@ -242,20 +248,22 @@ def ways_in_extent(extent: ExtentDegrees) -> Dict[int, OSMWay]:
                             p.way && st_makeenvelope(
                             %(lonmin)s, %(latmin)s, %(lonmax)s, %(latmax)s
                             , 3857)
-                        ''',
-                extent.as_epsg3857())
+                        """,
+                extent.as_epsg3857(),
+            )
             for row in cur:
                 retval[row.id] = OSMWay(
                     nodes=row.nodes,
                     attributes=(
                         dict(zip(row.tags[::2], row.tags[1::2]))
                         if row.tags is not None
-                        else None),
-                    geoJSON=row.geojson
+                        else None
+                    ),
+                    geoJSON=row.geojson,
                 )
 
     conn.close()
-    logger.debug(f'Found {len(retval)} matching ways')
+    logger.debug(f"Found {len(retval)} matching ways")
 
     return retval
 
@@ -272,7 +280,7 @@ def relations_in_extent(extent: ExtentDegrees) -> Dict[int, OSMRelation]:
             # TODO check that ids are positive, all these 3 tables can have negative ids!
             # maybe sometimes we need to change the sign
             cur.execute(
-                '''SELECT
+                """SELECT
                         id,
                         members,
                         tags,
@@ -317,16 +325,21 @@ def relations_in_extent(extent: ExtentDegrees) -> Dict[int, OSMRelation]:
                             p.way && st_makeenvelope(
                             %(lonmin)s, %(latmin)s, %(lonmax)s, %(latmax)s
                             , 3857)
-                        ''',
-                extent.as_epsg3857())
+                        """,
+                extent.as_epsg3857(),
+            )
             for row in cur:
                 members = []
                 for wdesc, wtype in zip(row.members[::2], row.members[1::2]):
-                    members.append((
-                        RelMemberType.WAY if wdesc.startswith('w') else RelMemberType.NODE,
-                        int(wdesc[1:]),
-                        wtype
-                    ))
+                    members.append(
+                        (
+                            RelMemberType.WAY
+                            if wdesc.startswith("w")
+                            else RelMemberType.NODE,
+                            int(wdesc[1:]),
+                            wtype,
+                        )
+                    )
 
                 retval[row.id] = OSMRelation(
                     members=members,
@@ -339,5 +352,5 @@ def relations_in_extent(extent: ExtentDegrees) -> Dict[int, OSMRelation]:
                 )
 
     conn.close()
-    logger.debug(f'Found {len(retval)} matching relations')
+    logger.debug(f"Found {len(retval)} matching relations")
     return retval

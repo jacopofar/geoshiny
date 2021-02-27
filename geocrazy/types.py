@@ -11,6 +11,7 @@ TRAN_4326_TO_3857 = Transformer.from_crs("EPSG:4326", "EPSG:3857")
 @dataclass
 class ObjectStyle:
     """Style for any element on the map"""
+
     facecolor: Optional[str] = None
     edgecolor: Optional[str] = None
     linewidth: Optional[float] = None
@@ -20,12 +21,10 @@ class ObjectStyle:
     shape: Optional[str] = None
 
     def get_drawing_options(self):
-        """Get the option to draw this element.
-
-        """
+        """Get the option to draw this element."""
         ret = {}
         for field in fields(self):
-            if field.name == 'shape':
+            if field.name == "shape":
                 continue
             value = getattr(self, field.name)
             if value is not None:
@@ -33,10 +32,10 @@ class ObjectStyle:
         return ret
 
 
-
 @dataclass
 class ExtentDegrees:
     """Bounding box in WGS84 degrees. Aka EPSG:4326"""
+
     latmin: float
     latmax: float
     lonmin: float
@@ -79,6 +78,7 @@ class ExtentDegrees:
             lonmax=lonmax,
         )
 
+
 @dataclass
 class OSMEntity:
     """General entity expected by the render callback.
@@ -86,11 +86,14 @@ class OSMEntity:
     This is not supposed to be created directly, is just a simple way to
     have the equivalent of an interface in Python without messy ABCs
     """
+
     geoJSON: Optional[str] = None
+
 
 @dataclass
 class OSMNode(OSMEntity):
     """OSM Node object."""
+
     lat: Optional[float] = None
     lon: Optional[float] = None
     attributes: Optional[Dict[str, str]] = None
@@ -100,6 +103,7 @@ class OSMNode(OSMEntity):
 @dataclass
 class OSMWay(OSMEntity):
     """OSM Way object."""
+
     nodes: List[int] = field(default_factory=list)
     attributes: Optional[Dict[str, str]] = None
     geoJSON: Optional[str] = None
@@ -113,6 +117,7 @@ class RelMemberType(Enum):
 @dataclass
 class OSMRelation(OSMEntity):
     """OSM Relation object."""
+
     members: List[Tuple[RelMemberType, int, str]] = field(default_factory=list)
     attributes: Optional[Dict[str, str]] = None
     geoJSON: Optional[str] = None
@@ -121,6 +126,7 @@ class OSMRelation(OSMEntity):
 @dataclass
 class AreaData:
     """OSM data for some area."""
+
     nodes: Dict[int, OSMNode] = field(default_factory=dict)
     ways: Dict[int, OSMWay] = field(default_factory=dict)
     relations: Dict[int, OSMRelation] = field(default_factory=dict)

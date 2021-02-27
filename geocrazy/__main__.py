@@ -1,22 +1,30 @@
 import logging
 
 from geocrazy import import_hell
+
 import_hell.import_gdal_shapely(wait=False)
 
 from osgeo import gdal
 from shapely.geometry.base import BaseGeometry
 
 from geocrazy.types import (
-    ExtentDegrees, OSMRelation,
-    OSMWay, ObjectStyle,
+    ExtentDegrees,
+    OSMRelation,
+    OSMWay,
+    ObjectStyle,
 )
 from geocrazy.parse_osm_xml import xml_to_map_obj
 from geocrazy.database_extract import data_from_extent
-from geocrazy.draw_helpers import figure_to_numpy, save_to_geoTIFF, data_to_representation, representation_to_figure
+from geocrazy.draw_helpers import (
+    figure_to_numpy,
+    save_to_geoTIFF,
+    data_to_representation,
+    representation_to_figure,
+)
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s %(levelname)s: %(message)s',
+    format="%(asctime)s %(levelname)s: %(message)s",
 )
 
 logger = logging.getLogger(__name__)
@@ -25,7 +33,7 @@ logger = logging.getLogger(__name__)
 def asphalt_way_callback(w: OSMWay):
     if w.attributes is None:
         return
-    if w.attributes.get('surface') == 'asphalt':
+    if w.attributes.get("surface") == "asphalt":
         return (128, 128, 128)
 
 
@@ -40,72 +48,74 @@ def any_rel_callback(r: OSMRelation):
 
 
 def grey_all_callback(x):
-    return dict(color='grey', alpha=0.5)
+    return dict(color="grey", alpha=0.5)
 
 
 def nice_representation(w: OSMWay):
     if w.attributes is None:
         return
 
-    if w.attributes.get('bicycle') == 'designated':
-        return dict(path_type='bike')
-    if 'water' in w.attributes:
-        return dict(surface_type='water')
+    if w.attributes.get("bicycle") == "designated":
+        return dict(path_type="bike")
+    if "water" in w.attributes:
+        return dict(surface_type="water")
 
-    if w.attributes.get('landuse') == 'grass':
-        return dict(surface_type='grass')
-    if w.attributes.get('leisure') == 'park':
-        return dict(surface_type='grass')
-    if w.attributes.get('natural') == 'scrub':
-        return dict(surface_type='wild grass')
+    if w.attributes.get("landuse") == "grass":
+        return dict(surface_type="grass")
+    if w.attributes.get("leisure") == "park":
+        return dict(surface_type="grass")
+    if w.attributes.get("natural") == "scrub":
+        return dict(surface_type="wild grass")
 
-    if 'building' in w.attributes and w.attributes['building'] != 'no':
-        if 'building:levels' not in w.attributes:
-            return dict(surface_type='building')
+    if "building" in w.attributes and w.attributes["building"] != "no":
+        if "building:levels" not in w.attributes:
+            return dict(surface_type="building")
         else:
             try:
-                level_num = float(w.attributes['building:levels'])
+                level_num = float(w.attributes["building:levels"])
             except ValueError:
-                logger.debug(f"Invalid number of floors: {w.attributes['building:levels']}")
-                return dict(surface_type='building')
-            return dict(surface_type='building', floors=level_num)
+                logger.debug(
+                    f"Invalid number of floors: {w.attributes['building:levels']}"
+                )
+                return dict(surface_type="building")
+            return dict(surface_type="building", floors=level_num)
 
 
 def nice_renderer(d: dict, shape: BaseGeometry):
-    water_style = ObjectStyle(facecolor='blue', edgecolor='darkblue', linewidth=0.1)
-    grass_style = ObjectStyle(facecolor='green', linewidth=0.1)
-    wild_grass_style = ObjectStyle(facecolor='darkgreen', linewidth=0.1)
+    water_style = ObjectStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
+    grass_style = ObjectStyle(facecolor="green", linewidth=0.1)
+    wild_grass_style = ObjectStyle(facecolor="darkgreen", linewidth=0.1)
 
-    missing_levels = ObjectStyle(facecolor='red', edgecolor='darkred', linewidth=0.05)
-    tall_build = ObjectStyle(facecolor='black', edgecolor='black', linewidth=0.05)
-    low_build = ObjectStyle(facecolor='grey', edgecolor='darkgrey', linewidth=0.05)
+    missing_levels = ObjectStyle(facecolor="red", edgecolor="darkred", linewidth=0.05)
+    tall_build = ObjectStyle(facecolor="black", edgecolor="black", linewidth=0.05)
+    low_build = ObjectStyle(facecolor="grey", edgecolor="darkgrey", linewidth=0.05)
 
-    bike_path = ObjectStyle(linestyle='dashed', color='yellow', linewidth=0.1)
+    bike_path = ObjectStyle(linestyle="dashed", color="yellow", linewidth=0.1)
 
-    if d.get('path_type') == 'bike':
+    if d.get("path_type") == "bike":
         return bike_path
 
-    surface_type = d.get('surface_type')
-    if surface_type == 'building':
-        if 'floors' not in d:
+    surface_type = d.get("surface_type")
+    if surface_type == "building":
+        if "floors" not in d:
             return missing_levels
         else:
-            if d['floors'] > 2.0:
+            if d["floors"] > 2.0:
                 return tall_build
             else:
                 return low_build
 
-    if surface_type == 'grass':
+    if surface_type == "grass":
         return grass_style
-    if surface_type == 'wild grass':
+    if surface_type == "wild grass":
         return wild_grass_style
-    if surface_type == 'water':
+    if surface_type == "water":
         # from shapely import affinity
         # return water_style, affinity.rotate(shape, 90, origin='centroid')
         return water_style
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # this cover most of Berlin, takes 5 minutes
     # e = ExtentDegrees(
     #     latmin=52.4650,
@@ -138,32 +148,30 @@ if __name__ == '__main__':
     # )
 
     db_data = data_from_extent(extent)
-    logger.info('Data has been read, processing...')
+    logger.info("Data has been read, processing...")
     reprs = data_to_representation(db_data, entity_callback=nice_representation)
-    logger.info('Representation has been calculated, generating figure...')
+    logger.info("Representation has been calculated, generating figure...")
 
     db_img = representation_to_figure(reprs, extent, nice_renderer, figsize=3000)
     # db_img = map_to_figure(extent, db_data, way_callback=nice_callback, relation_callback=nice_callback, figsize=2500)
-    logger.info('Figure is ready, persisting to PNG...')
+    logger.info("Figure is ready, persisting to PNG...")
 
-    db_img.savefig('piece_generated.png')
-    logger.info('Figure is ready, persisting to SVG...')
+    db_img.savefig("piece_generated.png")
+    logger.info("Figure is ready, persisting to SVG...")
 
-    db_img.savefig('piece_generated.svg')
+    db_img.savefig("piece_generated.svg")
 
-    logger.info('Figure is ready, persisting to geoTIFF...')
+    logger.info("Figure is ready, persisting to geoTIFF...")
 
     rasterized = figure_to_numpy(db_img)
-    save_to_geoTIFF(extent, rasterized, 'piece_generated.tif')
-    logger.info('done!')
+    save_to_geoTIFF(extent, rasterized, "piece_generated.tif")
+    logger.info("done!")
 
     exit()
-
 
     import json
     from shapely.geometry import shape
     from geocrazy.draw_helpers import render_shapes_to_figure, figure_to_numpy
-
 
     line_geojson = '{"type":"Polygon","coordinates":[[[13.3730741,52.528892399],[13.3732394,52.528739999],[13.3733324,52.528769599],[13.3734522,52.528810199],[13.3736096,52.528858799],[13.3744697,52.529166499],[13.3747036,52.529250199],[13.3748861,52.529311299],[13.3749662,52.529338699],[13.3745283,52.529799099],[13.3742478,52.529694699],[13.374134,52.529808599],[13.3737474,52.529675299],[13.373759,52.529665399],[13.3738839,52.529534099],[13.3736457,52.529450199],[13.3735978,52.529432699],[13.3738416,52.529166699],[13.3730741,52.528892399]],[[13.3733161,52.528932899],[13.3735506,52.529015099],[13.3736102,52.528954699],[13.3733767,52.528872999],[13.3733161,52.528932899]],[[13.3736913,52.529063299],[13.3738527,52.529120799],[13.3739092,52.529059099],[13.3737474,52.529001599],[13.3736913,52.529063299]],[[13.3738146,52.529369699],[13.3738877,52.529395999],[13.373992,52.529289999],[13.3739195,52.529263899],[13.3738146,52.529369699]],[[13.3739585,52.529161699],[13.374125,52.529221599],[13.3741824,52.529159999],[13.3740189,52.529101199],[13.3739585,52.529161699]],[[13.3739754,52.529504299],[13.3742818,52.529615199],[13.3744435,52.529445099],[13.3741371,52.529335599],[13.3739754,52.529504299]],[[13.3742729,52.529277899],[13.3744951,52.529357999],[13.3745516,52.529295799],[13.374334,52.529217499],[13.3742729,52.529277899]],[[13.3744009,52.529653699],[13.3744945,52.529685499],[13.3746104,52.529557999],[13.3745186,52.529527799],[13.3744009,52.529653699]],[[13.374605,52.529450799],[13.3746828,52.529479599],[13.3747424,52.529415999],[13.3746646,52.529386499],[13.374605,52.529450799]]]}'
     multipolygon = shape(json.loads(line_geojson))
@@ -177,26 +185,29 @@ if __name__ == '__main__':
     # this extent contains the above feature in its North-East corner
 
     fig = render_shapes_to_figure(
-        extent, [
-            (multipolygon, dict(facecolor='#ff0000', edgecolor='black', alpha=0.5)),
-            (multipolygon2, dict(facecolor='#00ff00', edgecolor='blue')),
-            (multipolygon3, dict(facecolor='yellow', edgecolor='blue')),
-            ]
-        )
-    fig.savefig('image.png')
-
-
+        extent,
+        [
+            (multipolygon, dict(facecolor="#ff0000", edgecolor="black", alpha=0.5)),
+            (multipolygon2, dict(facecolor="#00ff00", edgecolor="blue")),
+            (multipolygon3, dict(facecolor="yellow", edgecolor="blue")),
+        ],
+    )
+    fig.savefig("image.png")
 
     way_callback = any_way_callback
 
-    osm_name = 'museum_insel_berlin.osm'
+    osm_name = "museum_insel_berlin.osm"
     xml_data, extent = xml_to_map_obj(osm_name)
-    xml_img = map_to_image(extent, xml_data, way_callback=way_callback, relation_callback=any_rel_callback)
-    save_to_geoTIFF(extent, xml_img, 'image_from_xml.tif')
+    xml_img = map_to_image(
+        extent, xml_data, way_callback=way_callback, relation_callback=any_rel_callback
+    )
+    save_to_geoTIFF(extent, xml_img, "image_from_xml.tif")
 
     db_data = data_from_extent(extent)
-    db_img = map_to_image(extent, db_data, way_callback=way_callback, relation_callback=any_rel_callback)
-    save_to_geoTIFF(extent, db_img, 'image_from_db.tif')
+    db_img = map_to_image(
+        extent, db_data, way_callback=way_callback, relation_callback=any_rel_callback
+    )
+    save_to_geoTIFF(extent, db_img, "image_from_db.tif")
 
     # for osm_name in ['new_york_park.osm', 'sample.osm', 'museum_insel_berlin.osm']:
     #     d, e = xml_to_map_obj(osm_name)

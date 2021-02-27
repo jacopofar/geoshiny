@@ -26,26 +26,24 @@ logger = logging.getLogger(__name__)
 class Polygon:
     # Adapt Shapely or GeoJSON/geo_interface polygons to a common interface
     def __init__(self, context):
-        if hasattr(context, 'interiors'):
+        if hasattr(context, "interiors"):
             self.context = context
         else:
-            self.context = getattr(context, '__geo_interface__', context)
+            self.context = getattr(context, "__geo_interface__", context)
 
     @property
     def geom_type(self):
-        return (getattr(self.context, 'geom_type', None)
-                or self.context['type'])
+        return getattr(self.context, "geom_type", None) or self.context["type"]
 
     @property
     def exterior(self):
-        return (getattr(self.context, 'exterior', None)
-                or self.context['coordinates'][0])
+        return getattr(self.context, "exterior", None) or self.context["coordinates"][0]
 
     @property
     def interiors(self):
-        value = getattr(self.context, 'interiors', None)
+        value = getattr(self.context, "interiors", None)
         if value is None:
-            value = self.context['coordinates'][1:]
+            value = self.context["coordinates"][1:]
         return value
 
 
@@ -53,21 +51,20 @@ def to_polygon_path(polygon):
     """Constructs a compound matplotlib path from a Shapely or GeoJSON-like
     geometric object"""
     this = Polygon(polygon)
-    assert this.geom_type == 'Polygon'
+    assert this.geom_type == "Polygon"
 
     def coding(ob):
         # The codes will be all "LINETO" commands, except for "MOVETO"s at the
         # beginning of each subpath
-        n = len(getattr(ob, 'coords', None) or ob)
+        n = len(getattr(ob, "coords", None) or ob)
         vals = ones(n, dtype=Path.code_type) * Path.LINETO
         vals[0] = Path.MOVETO
         return vals
+
     vertices = concatenate(
-                    [asarray(this.exterior)[:, :2]]
-                    + [asarray(r)[:, :2] for r in this.interiors])
-    codes = concatenate(
-                [coding(this.exterior)]
-                + [coding(r) for r in this.interiors])
+        [asarray(this.exterior)[:, :2]] + [asarray(r)[:, :2] for r in this.interiors]
+    )
+    codes = concatenate([coding(this.exterior)] + [coding(r) for r in this.interiors])
     return Path(vertices, codes)
 
 
@@ -85,7 +82,9 @@ def create_polygon_patch(polygon, **kwargs):
     return PathPatch(to_polygon_path(polygon), **kwargs)
 
 
-def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: ExtentDegrees) -> Tuple[float, float]:
+def coord_to_pixel(
+    lat: float, lon: float, height: float, width: float, extent: ExtentDegrees
+) -> Tuple[float, float]:
     """Convert lat/lon coordinate to a pixel coordinate for a given area.
 
     NOTE: this assumes the extent is very small, enough to not introduce errors
@@ -100,7 +99,7 @@ def coord_to_pixel(lat: float, lon: float, height: float, width: float, extent: 
 def _representation_iterator(
     data: AreaData,
     entity_callback: Callable[[OSMEntity], dict],
-        ):
+):
     for w in data.ways.values():
         if w.geoJSON is None:
             continue
@@ -125,29 +124,29 @@ def _representation_iterator(
 @contextmanager
 def _read_file(target_file: Union[str, TextIOWrapper]):
     if isinstance(target_file, str):
-        with open(target_file, 'r') as fh:
+        with open(target_file, "r") as fh:
             yield fh
     elif isinstance(target_file, TextIOWrapper):
         yield target_file
     else:
-        raise TypeError(f'Invalid type {type(target_file)}')
+        raise TypeError(f"Invalid type {type(target_file)}")
 
 
 @contextmanager
 def _write_file(target_file: Union[str, TextIOWrapper]):
     if isinstance(target_file, str):
-        with open(target_file, 'w') as fh:
+        with open(target_file, "w") as fh:
             yield fh
     elif isinstance(target_file, TextIOWrapper):
         yield target_file
     else:
-        raise TypeError(f'Invalid type {type(target_file)}')
+        raise TypeError(f"Invalid type {type(target_file)}")
 
 
 def data_to_representation(
     data: AreaData,
     entity_callback: Callable,
-        ) -> List[Tuple[str, dict]]:
+) -> List[Tuple[str, dict]]:
 
     representations = []
     for geoJSON, repr in _representation_iterator(data, entity_callback):
@@ -162,18 +161,22 @@ def data_to_representation_file(
 ):
     with _write_file(target_file) as fh:
         for geoJSON, repr in _representation_iterator(data, entity_callback):
-            fh.write(json.dumps(dict(
-                geojson=geoJSON,
-                representation=repr,
-            )))
-            fh.write('\n')
+            fh.write(
+                json.dumps(
+                    dict(
+                        geojson=geoJSON,
+                        representation=repr,
+                    )
+                )
+            )
+            fh.write("\n")
 
 
 def file_to_representation(target_file: Union[str, TextIOWrapper]):
     with _read_file(target_file) as fh:
         for line in fh:
             obj = json.loads(line)
-            yield (obj['geojson'], obj['representation'])
+            yield (obj["geojson"], obj["representation"])
 
 
 def representation_to_figure(
@@ -181,7 +184,7 @@ def representation_to_figure(
     extent: ExtentDegrees,
     representer: Callable[[dict, Any], Optional[ObjectStyle]],
     figsize: int = 1500,
-        ) -> Figure:
+) -> Figure:
 
     to_draw = []
 
@@ -192,18 +195,18 @@ def representation_to_figure(
             continue
         new_shape = res.shape if res.shape is not None else shapely_obj
         draw_options = res.get_drawing_options()
-        to_draw.append((
-            new_shape,
-            draw_options,
-            ))
+        to_draw.append(
+            (
+                new_shape,
+                draw_options,
+            )
+        )
     return render_shapes_to_figure(extent, to_draw, figsize)
 
 
 def render_shapes_to_figure(
-    extent: ExtentDegrees,
-    to_draw: List[Tuple[BaseGeometry, Dict]],
-    figsize: int = 1500
-        ) -> Figure:
+    extent: ExtentDegrees, to_draw: List[Tuple[BaseGeometry, Dict]], figsize: int = 1500
+) -> Figure:
     """Renders arbitrary Shapely geometrical objects to a Figure.
 
     This is quite ambitious!
@@ -231,25 +234,25 @@ def render_shapes_to_figure(
         # Polygon, MultiLineString, MultiPolygon, and GeometryCollection
         # however I found only these three so far
         try:
-            if geom.type == 'LineString':
+            if geom.type == "LineString":
                 x, y = geom.xy
                 ax.plot(x, y, **options)
                 continue
 
-            if geom.type == 'Polygon':
+            if geom.type == "Polygon":
                 patch = create_polygon_patch(geom, **options)
                 ax.add_patch(patch)
                 continue
 
-            if geom.type == 'Point':
+            if geom.type == "Point":
                 x, y = geom.xy
                 ax.scatter(x, y, **options)
                 continue
 
-            raise ValueError(f'Cannot draw type {geom.type}')
+            raise ValueError(f"Cannot draw type {geom.type}")
 
         except AttributeError:
-            logger.exception(f'Error drawing, will skip {geom}, options: {options}')
+            logger.exception(f"Error drawing, will skip {geom}, options: {options}")
 
     return fig
 
@@ -286,16 +289,16 @@ def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
     """
     nx, ny = image.shape[:2]
     # this is because the image is distorted if not square
-    assert nx == ny, 'Image is not a square'
+    assert nx == ny, "Image is not a square"
     xres = (bbox.lonmax - bbox.lonmin) / nx
     yres = (bbox.latmax - bbox.latmin) / ny
     geotransform = (bbox.lonmin, xres, 0, bbox.latmax, 0, -yres)
 
-    dst_ds = gdal.GetDriverByName('GTiff').Create(fname, ny, nx, 3, gdal.GDT_Byte)
+    dst_ds = gdal.GetDriverByName("GTiff").Create(fname, ny, nx, 3, gdal.GDT_Byte)
 
-    srs = osr.SpatialReference()            # establish encoding
-    srs.ImportFromEPSG(4326)                # WGS84 lat/long (in degrees)
-    dst_ds.SetGeoTransform(geotransform)    # specify coords
+    srs = osr.SpatialReference()  # establish encoding
+    srs.ImportFromEPSG(4326)  # WGS84 lat/long (in degrees)
+    dst_ds.SetGeoTransform(geotransform)  # specify coords
     dst_ds.SetProjection(srs.ExportToWkt())  # export coords to the file
     # image uses cartesian coordinates, swap to graphics coordinates
     # which means to invert Y axis

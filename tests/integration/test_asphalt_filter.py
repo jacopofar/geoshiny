@@ -5,20 +5,24 @@ import pytest
 
 from geocrazy.parse_osm_xml import xml_to_map_obj
 from geocrazy.types import OSMWay
-from geocrazy.draw_helpers import figure_to_numpy, data_to_representation, representation_to_figure
+from geocrazy.draw_helpers import (
+    figure_to_numpy,
+    data_to_representation,
+    representation_to_figure,
+)
 
 
-@pytest.mark.skip(reason='shape generation from XML is not implemented yet')
+@pytest.mark.skip(reason="shape generation from XML is not implemented yet")
 def test_asphalt_filter(tmpdir):
     def asphalt_data(w: OSMWay):
-        if w.attributes.get('surface') == 'asphalt':
+        if w.attributes.get("surface") == "asphalt":
             return dict(asphalt=True)
 
     def asphalt_repr(d):
-        if d.get('asphalt'):
-            return dict(facecolor='grey')
+        if d.get("asphalt"):
+            return dict(facecolor="grey")
 
-    map_data, extent = xml_to_map_obj('tests/sampledata/museum_insel_berlin.osm')
+    map_data, extent = xml_to_map_obj("tests/sampledata/museum_insel_berlin.osm")
     reprs = data_to_representation(map_data, entity_callback=asphalt_repr)
     fig = representation_to_figure(reprs, extent, asphalt_repr, figsize=800)
 
@@ -32,12 +36,15 @@ def test_asphalt_filter(tmpdir):
     map_data_stripped = deepcopy(map_data)
     for way in map_data_stripped.ways.values():
         if way.attributes is not None:
-            way.attributes['surface'] = 'not asphalt'
+            way.attributes["surface"] = "not asphalt"
 
-    reprs_stripped = data_to_representation(map_data_stripped, entity_callback=asphalt_repr)
-    fig_stripped = representation_to_figure(reprs_stripped, extent, asphalt_repr, figsize=800)
+    reprs_stripped = data_to_representation(
+        map_data_stripped, entity_callback=asphalt_repr
+    )
+    fig_stripped = representation_to_figure(
+        reprs_stripped, extent, asphalt_repr, figsize=800
+    )
     img_stripped = figure_to_numpy(fig_stripped)
 
     assert img_stripped.shape == (800, 800, 4)
     assert np.sum(img_stripped) == 0.0
-
