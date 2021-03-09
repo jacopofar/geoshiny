@@ -134,6 +134,13 @@ if __name__ == "__main__":
         lonmin=13.3613,
         lonmax=13.3768,
     )
+    # small piece of Central Park in NY
+    extent = ExtentDegrees(
+        latmin=40.78040,
+        latmax=40.78280,
+        lonmin=-73.96050,
+        lonmax=-73.96350,
+    )
     # most of Berlin, takes:
     # 6 minutes to read all the data
     # 4 minutes to generate the figure

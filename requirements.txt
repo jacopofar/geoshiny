@@ -7,7 +7,7 @@ numpy==1.20.1
 # database access
 psycopg2-binary==2.8.6
 # coordinate system conversion
-pyproj==3.0.0.post1
+pyproj==3.0.1
 # geometrical operations, easy GeoJSON parsing
 # NEEDS the no-binary option, see the integration/aaa-* test for more info
 Shapely==1.7.1 --no-binary=Shapely
@@ -21,3 +21,6 @@ dotenv-cli==2.2.0
 
 # linting
 flake8==3.8.4
+
+# type checking
+mypy==0.812
