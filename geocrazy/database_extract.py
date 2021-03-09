@@ -239,6 +239,22 @@ def ways_in_extent(extent: ExtentDegrees) -> Dict[int, OSMWay]:
                         id,
                         nodes,
                         tags,
+                        ST_AsGeoJSON(ST_Transform(r.way, 4326)) AS geojson
+                    FROM planet_osm_ways w
+
+                            JOIN planet_osm_points p
+                                ON p.osm_id = w.id
+                    WHERE
+                            p.way && st_makeenvelope(
+                            %(lonmin)s, %(latmin)s, %(lonmax)s, %(latmax)s
+                            , 3857)
+
+                    UNION ALL
+
+                    SELECT
+                        id,
+                        nodes,
+                        tags,
                         ST_AsGeoJSON(ST_Transform(p.way, 4326)) AS geojson
                     FROM planet_osm_ways w
 
