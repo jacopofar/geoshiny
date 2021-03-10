@@ -13,7 +13,7 @@ from numpy import asarray, concatenate, ones
 from osgeo import gdal
 from osgeo import osr
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import shape, mapping
+from shapely.geometry import shape, mapping, asShape
 
 from geocrazy.types import ExtentDegrees, GeomRepresentation, ObjectStyle
 
@@ -158,7 +158,7 @@ def file_to_representation(target_file: Union[str, TextIOWrapper]):
     with _read_file(target_file) as fh:
         for line in fh:
             obj = json.loads(line)
-            yield (obj["geojson"], obj["representation"])
+            yield (obj["osm_id"], asShape(obj["geojson"]), obj["representation"])
 
 
 def representation_to_figure(
@@ -174,6 +174,7 @@ def representation_to_figure(
         res = representer(osm_id, geom, repr)
         if res is None:
             continue
+
         new_shape = res.shape if res.shape is not None else geom
         draw_options = res.get_drawing_options()
         to_draw.append(

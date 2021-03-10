@@ -19,7 +19,7 @@ class ObjectStyle:
     linestyle: Optional[str] = None
     color: Optional[str] = None
     alpha: Optional[float] = None
-    shape: Optional[str] = None
+    shape: Optional[BaseGeometry] = None
 
     def get_drawing_options(self):
         """Get the option to draw this element."""

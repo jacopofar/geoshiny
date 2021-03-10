@@ -1,6 +1,11 @@
 import json
 import subprocess
 
+from geocrazy import import_hell
+
+# this fixes some weird import issues and raises an error
+import_hell.import_gdal_shapely(wait=False)
+
 
 def test_aaaaa_weird_anomaly():
     """Okay, this is weird.

@@ -3,7 +3,7 @@ import subprocess
 import time
 
 
-def import_gdal_shapely(wait: bool = True):
+def import_gdal_shapely(wait: bool = False):
     """Handle the case of an import order error.
 
     The order of import for gdal and shapely causes very strange issues,

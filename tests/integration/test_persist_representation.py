@@ -1,8 +1,10 @@
 import filecmp
 
+import pytest
 from shapely.geometry.base import BaseGeometry
+from shapely import affinity
 
-from geocrazy.types import ExtentDegrees, OSMWay, ObjectStyle
+from geocrazy.types import ExtentDegrees, ObjectStyle
 from geocrazy.database_extract import data_from_extent
 from geocrazy.draw_helpers import (
     data_to_representation,
@@ -12,34 +14,34 @@ from geocrazy.draw_helpers import (
 )
 
 
-def nice_representation(w: OSMWay):
-    if w.attributes is None:
+def nice_representation(osm_id: int, geom, tags: dict):
+    if tags is None:
         return
 
-    if w.attributes.get("bicycle") == "designated":
+    if tags.get("bicycle") == "designated":
         return dict(path_type="bike")
-    if "water" in w.attributes:
+    if "water" in tags:
         return dict(surface_type="water")
 
-    if w.attributes.get("landuse") == "grass":
+    if tags.get("landuse") == "grass":
         return dict(surface_type="grass")
-    if w.attributes.get("leisure") == "park":
+    if tags.get("leisure") == "park":
         return dict(surface_type="grass")
-    if w.attributes.get("natural") == "scrub":
+    if tags.get("natural") == "scrub":
         return dict(surface_type="wild grass")
 
-    if "building" in w.attributes and w.attributes["building"] != "no":
-        if "building:levels" not in w.attributes:
+    if "building" in tags and tags["building"] != "no":
+        if "building:levels" not in tags:
             return dict(surface_type="building")
         else:
             try:
-                level_num = float(w.attributes["building:levels"])
+                level_num = float(tags["building:levels"])
             except ValueError:
                 return dict(surface_type="building")
             return dict(surface_type="building", floors=level_num)
 
 
-def nice_renderer(d: dict, shape: BaseGeometry = None):
+def nice_renderer(osm_id: int, shape: BaseGeometry, d: dict):
     water_style = ObjectStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
     grass_style = ObjectStyle(facecolor="green", linewidth=0.1)
     wild_grass_style = ObjectStyle(facecolor="darkgreen", linewidth=0.1)
@@ -68,19 +70,20 @@ def nice_renderer(d: dict, shape: BaseGeometry = None):
     if surface_type == "wild grass":
         return wild_grass_style
     if surface_type == "water":
-        from shapely import affinity
+        water_style.shape = affinity.rotate(shape, 90, origin="centroid")
+        return water_style
 
-        return water_style, affinity.rotate(shape, 90, origin="centroid")
 
-
-def test_persist_and_retrieve(tmpdir):
+@pytest.mark.asyncio
+async def test_persist_and_retrieve(tmpdir):
+    # northern part of Rostock, Germany
     extent = ExtentDegrees(
-        latmin=52.50319,
-        latmax=52.50507,
-        lonmin=13.22676,
-        lonmax=13.23066,
+        latmin=54.0960,
+        latmax=54.2046,
+        lonmin=12.0029,
+        lonmax=12.1989,
     )
-    data = data_from_extent(extent)
+    data = await data_from_extent(extent)
     target_file = tmpdir.join("representation.jsonl")
     target_file2 = tmpdir.join("representation2.jsonl")
 

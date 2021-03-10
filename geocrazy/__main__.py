@@ -12,7 +12,6 @@ from shapely.geometry.base import BaseGeometry
 
 from geocrazy.types import (
     ExtentDegrees,
-    GeomRepresentation,
     ObjectStyle,
 )
 from geocrazy.database_extract import data_from_extent
