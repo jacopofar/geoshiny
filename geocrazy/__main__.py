@@ -1,7 +1,10 @@
+import asyncio
 import logging
+from typing import Optional
 
 from geocrazy import import_hell
 
+# this fixes some weird import issues and raises an error
 import_hell.import_gdal_shapely(wait=False)
 
 from osgeo import gdal
@@ -9,11 +12,9 @@ from shapely.geometry.base import BaseGeometry
 
 from geocrazy.types import (
     ExtentDegrees,
-    OSMRelation,
-    OSMWay,
+    GeomRepresentation,
     ObjectStyle,
 )
-from geocrazy.parse_osm_xml import xml_to_map_obj
 from geocrazy.database_extract import data_from_extent
 from geocrazy.draw_helpers import (
     figure_to_numpy,
@@ -30,58 +31,33 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def asphalt_way_callback(w: OSMWay):
-    if w.attributes is None:
-        return
-    if w.attributes.get("surface") == "asphalt":
-        return (128, 128, 128)
-
-
-def any_way_callback(w: OSMWay):
-    if w.attributes is not None:
-        logger.info(w.attributes)
-    return (250, 250, 250)
-
-
-def any_rel_callback(r: OSMRelation):
-    return (250, 250, 250)
-
-
-def grey_all_callback(x):
-    return dict(color="grey", alpha=0.5)
-
-
-def nice_representation(w: OSMWay):
-    if w.attributes is None:
-        return
-
-    if w.attributes.get("bicycle") == "designated":
+def nice_representation(osm_id: int, geom, tags: dict) -> Optional[dict]:
+    if tags.get("bicycle") == "designated":
         return dict(path_type="bike")
-    if "water" in w.attributes:
+    if "water" in tags:
         return dict(surface_type="water")
 
-    if w.attributes.get("landuse") == "grass":
+    if tags.get("landuse") == "grass":
         return dict(surface_type="grass")
-    if w.attributes.get("leisure") == "park":
+    if tags.get("leisure") == "park":
         return dict(surface_type="grass")
-    if w.attributes.get("natural") == "scrub":
+    if tags.get("natural") == "scrub":
         return dict(surface_type="wild grass")
 
-    if "building" in w.attributes and w.attributes["building"] != "no":
-        if "building:levels" not in w.attributes:
+    if "building" in tags and tags["building"] != "no":
+        if "building:levels" not in tags:
             return dict(surface_type="building")
         else:
             try:
-                level_num = float(w.attributes["building:levels"])
+                level_num = float(tags["building:levels"])
             except ValueError:
-                logger.debug(
-                    f"Invalid number of floors: {w.attributes['building:levels']}"
-                )
+                logger.debug(f"Invalid number of floors: {tags['building:levels']}")
                 return dict(surface_type="building")
             return dict(surface_type="building", floors=level_num)
+    return None
 
 
-def nice_renderer(d: dict, shape: BaseGeometry):
+def nice_renderer(osm_id: int, shape: BaseGeometry, d: dict):
     water_style = ObjectStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
     grass_style = ObjectStyle(facecolor="green", linewidth=0.1)
     wild_grass_style = ObjectStyle(facecolor="darkgreen", linewidth=0.1)
@@ -141,6 +117,14 @@ if __name__ == "__main__":
         lonmin=-73.96050,
         lonmax=-73.96350,
     )
+
+    # northern part or Rostock, Germany
+    extent = ExtentDegrees(
+        latmin=54.0960,
+        latmax=54.2046,
+        lonmin=12.0029,
+        lonmax=12.1989,
+    )
     # most of Berlin, takes:
     # 6 minutes to read all the data
     # 4 minutes to generate the figure
@@ -154,7 +138,8 @@ if __name__ == "__main__":
     #     lonmax=13.6368,
     # )
 
-    db_data = data_from_extent(extent)
+    loop = asyncio.get_event_loop()
+    db_data = loop.run_until_complete(data_from_extent(extent))
     logger.info("Data has been read, processing...")
     reprs = data_to_representation(db_data, entity_callback=nice_representation)
     logger.info("Representation has been calculated, generating figure...")

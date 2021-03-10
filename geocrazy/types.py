@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
 from pyproj import Transformer
+from shapely.geometry.base import BaseGeometry
 
 
 TRAN_4326_TO_3857 = Transformer.from_crs("EPSG:4326", "EPSG:3857")
@@ -69,64 +70,17 @@ class ExtentDegrees:
         )
 
     def as_epsg3857(self):
+        """Convert the extent to a tuple in EPSG 3857.
+
+        The order is the same required by PostGIS st_makeenvelope
+        that is: lonmin, latmin, lonmax, latmax
+        """
         lonmin, latmin = TRAN_4326_TO_3857.transform(self.latmin, self.lonmin)
         lonmax, latmax = TRAN_4326_TO_3857.transform(self.latmax, self.lonmax)
-        return dict(
-            latmin=latmin,
-            latmax=latmax,
-            lonmin=lonmin,
-            lonmax=lonmax,
-        )
+        return (lonmin, latmin, lonmax, latmax)
 
 
 @dataclass
-class OSMEntity:
-    """General entity expected by the render callback.
-
-    This is not supposed to be created directly, is just a simple way to
-    have the equivalent of an interface in Python without messy ABCs
-    """
-
-    geoJSON: Optional[str] = None
-
-
-@dataclass
-class OSMNode(OSMEntity):
-    """OSM Node object."""
-
-    lat: Optional[float] = None
-    lon: Optional[float] = None
-    attributes: Optional[Dict[str, str]] = None
-    geoJSON: Optional[str] = None
-
-
-@dataclass
-class OSMWay(OSMEntity):
-    """OSM Way object."""
-
-    nodes: List[int] = field(default_factory=list)
-    attributes: Optional[Dict[str, str]] = None
-    geoJSON: Optional[str] = None
-
-
-class RelMemberType(Enum):
-    NODE = 1
-    WAY = 2
-
-
-@dataclass
-class OSMRelation(OSMEntity):
-    """OSM Relation object."""
-
-    members: List[Tuple[RelMemberType, int, str]] = field(default_factory=list)
-    attributes: Optional[Dict[str, str]] = None
-    geoJSON: Optional[str] = None
-
-
-@dataclass
-class AreaData:
-    """OSM data for some area."""
-
-    nodes: Dict[int, OSMNode] = field(default_factory=dict)
-    ways: Dict[int, OSMWay] = field(default_factory=dict)
-    relations: Dict[int, OSMRelation] = field(default_factory=dict)
+class GeomRepresentation:
+    properties: dict
+    geometry: Optional[BaseGeometry] = None

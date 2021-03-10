@@ -1,14 +1,61 @@
-from typing import Tuple
+from dataclasses import dataclass, field, fields
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
 from xml.dom.minidom import parse
 
-from geocrazy.types import (
-    AreaData,
-    ExtentDegrees,
-    OSMNode,
-    OSMWay,
-    OSMRelation,
-    RelMemberType,
-)
+from geocrazy.types import ExtentDegrees
+
+
+@dataclass
+class OSMEntity:
+    """General entity expected by the render callback.
+    This is not supposed to be created directly, is just a simple way to
+    have the equivalent of an interface in Python without messy ABCs
+    """
+
+    geoJSON: Optional[str] = None
+
+
+@dataclass
+class OSMNode(OSMEntity):
+    """OSM Node object."""
+
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    attributes: Optional[Dict[str, str]] = None
+    geoJSON: Optional[str] = None
+
+
+@dataclass
+class OSMWay(OSMEntity):
+    """OSM Way object."""
+
+    nodes: List[int] = field(default_factory=list)
+    attributes: Optional[Dict[str, str]] = None
+    geoJSON: Optional[str] = None
+
+
+class RelMemberType(Enum):
+    NODE = 1
+    WAY = 2
+
+
+@dataclass
+class OSMRelation(OSMEntity):
+    """OSM Relation object."""
+
+    members: List[Tuple[RelMemberType, int, str]] = field(default_factory=list)
+    attributes: Optional[Dict[str, str]] = None
+    geoJSON: Optional[str] = None
+
+
+@dataclass
+class AreaData:
+    """OSM data for some area."""
+
+    nodes: Dict[int, OSMNode] = field(default_factory=dict)
+    ways: Dict[int, OSMWay] = field(default_factory=dict)
+    relations: Dict[int, OSMRelation] = field(default_factory=dict)
 
 
 def xml_to_map_obj(fname: str) -> Tuple[AreaData, ExtentDegrees]:

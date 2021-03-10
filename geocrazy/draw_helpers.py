@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import json
 import logging
 from io import TextIOWrapper
-from typing import Any, Dict, Callable, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Callable, Iterator, List, Optional, Tuple, Union
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -13,9 +13,9 @@ from numpy import asarray, concatenate, ones
 from osgeo import gdal
 from osgeo import osr
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import shape
+from shapely.geometry import shape, mapping
 
-from geocrazy.types import ExtentDegrees, AreaData, ObjectStyle, OSMEntity
+from geocrazy.types import ExtentDegrees, GeomRepresentation, ObjectStyle
 
 logger = logging.getLogger(__name__)
 
@@ -97,28 +97,13 @@ def coord_to_pixel(
 
 
 def _representation_iterator(
-    data: AreaData,
-    entity_callback: Callable[[OSMEntity], dict],
+    data,
+    entity_callback: Callable[[int, BaseGeometry, dict], Optional[dict]],
 ):
-    for w in data.ways.values():
-        if w.geoJSON is None:
-            continue
-        representation = entity_callback(w)
+    for (osm_id, geom, tags) in data:
+        representation = entity_callback(osm_id, geom, tags)
         if representation is not None:
-            yield (w.geoJSON, representation)
-
-    for r in data.relations.values():
-        if r.geoJSON is None:
-            continue
-        representation = entity_callback(r)
-        if representation is not None:
-            yield (r.geoJSON, representation)
-    for p in data.nodes.values():
-        if p.geoJSON is None:
-            continue
-        representation = entity_callback(p)
-        if representation is not None:
-            yield (p.geoJSON, representation)
+            yield (osm_id, geom, representation)
 
 
 @contextmanager
@@ -144,27 +129,24 @@ def _write_file(target_file: Union[str, TextIOWrapper]):
 
 
 def data_to_representation(
-    data: AreaData,
+    data,
     entity_callback: Callable,
-) -> List[Tuple[str, dict]]:
-
-    representations = []
-    for geoJSON, repr in _representation_iterator(data, entity_callback):
-        representations.append((geoJSON, repr))
-    return representations
+) -> Iterator[Tuple[int, BaseGeometry, dict]]:
+    yield from _representation_iterator(data, entity_callback)
 
 
 def data_to_representation_file(
-    data: AreaData,
+    data,
     target_file: Union[str, TextIOWrapper],
     entity_callback: Callable,
 ):
     with _write_file(target_file) as fh:
-        for geoJSON, repr in _representation_iterator(data, entity_callback):
+        for osm_id, geom, repr in _representation_iterator(data, entity_callback):
             fh.write(
                 json.dumps(
                     dict(
-                        geojson=geoJSON,
+                        osm_id=osm_id,
+                        geojson=mapping(geom),
                         representation=repr,
                     )
                 )
@@ -180,20 +162,19 @@ def file_to_representation(target_file: Union[str, TextIOWrapper]):
 
 
 def representation_to_figure(
-    representations: Iterable[Tuple[str, dict]],
+    representations: Iterator[Tuple[int, BaseGeometry, dict]],
     extent: ExtentDegrees,
-    representer: Callable[[dict, Any], Optional[ObjectStyle]],
+    representer: Callable[[int, BaseGeometry, dict], Optional[ObjectStyle]],
     figsize: int = 1500,
 ) -> Figure:
 
     to_draw = []
 
-    for representation in representations:
-        shapely_obj = shape(json.loads(representation[0]))
-        res = representer(representation[1], shapely_obj)
+    for osm_id, geom, repr in representations:
+        res = representer(osm_id, geom, repr)
         if res is None:
             continue
-        new_shape = res.shape if res.shape is not None else shapely_obj
+        new_shape = res.shape if res.shape is not None else geom
         draw_options = res.get_drawing_options()
         to_draw.append(
             (
@@ -216,8 +197,9 @@ def render_shapes_to_figure(
     """
     fig = Figure(figsize=(5, 5), dpi=figsize / 5, frameon=False)
     ax = fig.add_subplot()
-    ax.set_ylim(extent.latmin, extent.latmax)
-    ax.set_xlim(extent.lonmin, extent.lonmax)
+    lonmin, latmin, lonmax, latmax = extent.as_epsg3857()
+    ax.set_ylim(latmin, latmax)
+    ax.set_xlim(lonmin, lonmax)
     # the following lines are the result of an ABSURD amount of attempts
     # I really hope one day matplotlib will become more intuitive ;_;
     ax.set_xmargin(0.0)
@@ -242,6 +224,12 @@ def render_shapes_to_figure(
             if geom.type == "Polygon":
                 patch = create_polygon_patch(geom, **options)
                 ax.add_patch(patch)
+                continue
+
+            if geom.type == "MultiPolygon":
+                for sub_geom in geom.geoms:
+                    patch = create_polygon_patch(sub_geom, **options)
+                    ax.add_patch(patch)
                 continue
 
             if geom.type == "Point":

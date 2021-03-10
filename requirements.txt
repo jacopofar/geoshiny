@@ -5,7 +5,7 @@ matplotlib==3.3.4
 # everything math
 numpy==1.20.1
 # database access
-psycopg2-binary==2.8.6
+asyncpg==0.22.0
 # coordinate system conversion
 pyproj==3.0.1
 # geometrical operations, easy GeoJSON parsing
