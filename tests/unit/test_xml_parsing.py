@@ -1,7 +1,10 @@
+import pytest
+
 from geocrazy.types import ExtentDegrees
 from geocrazy.parse_osm_xml import xml_to_map_obj
 
 
+@pytest.mark.skip(reason="This has to be reimplemented or just removed")
 def test_xml_is_parsed():
     features, extent = xml_to_map_obj("tests/sampledata/museum_insel_berlin.osm")
     assert extent == ExtentDegrees(
