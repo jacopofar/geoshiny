@@ -29,6 +29,17 @@ create-test-db:
 	sleep 5
 	docker exec -it postgis-test-db /usr/bin/createdb -U postgres osm_data
 	docker exec -it postgis-test-db /usr/bin/psql -U postgres -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;" osm_data
-	# create empty schema
-	docker cp tests/sampledata/schema.sql postgis-test-db:/schema.sql
+	# create test DB data
+	docker cp tests/sampledata/rostock_2021-05-01.sql postgis-test-db:/schema.sql
 	docker exec postgis-test-db sh -c "psql -U postgres -f /schema.sql osm_data"
+
+.PHONY: delete-test-db
+delete-test-db:
+	docker kill postgis-test-db
+	docker rm postgis-test-db
+
+.PHONY: test-from-zero
+test-from-zero:
+	make create-test-db
+	PGIS_CONN_STR=postgres://postgres:testpassword@localhost:15432/osm_data make install-test-all
+	make delete-test-db
