@@ -14,6 +14,9 @@ __NOTE__: this software is under development, the interface and the functionalit
   * many others
 * Store a filtered intermediate representation in JSONL to easily generate images without a database
 
+![example generated map](example.png)
+
+
 ## Input data
 
 First you need a PostGIS database with the data to represent in flex format. To create that, get a PDB file of the region you are interested to represent (you can also import the whole planet.osm file) and use osm2pgsql with the flex output to run the [pgosm-flex](https://github.com/rustprooflabs/pgosm-flex) scripts.
