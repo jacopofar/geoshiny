@@ -22,7 +22,7 @@ install-test-all:
 
 .PHONY: create-test-db
 create-test-db:
-	docker run --name postgis-test-db -p 15432:5432 -e POSTGRES_PASSWORD=testpassword -d postgis/postgis:13-master
+	docker run --rm --name postgis-test-db -p 15432:5432 -e POSTGRES_PASSWORD=testpassword -d postgis/postgis:13-master
 	docker exec postgis-test-db sh -c 'until pg_isready; do echo "Waiting for the DB to be up..."; sleep 4; done'
 	# sometimes there's a random restart, especially with low memory. Wait some extra time
 	# meh...
@@ -36,7 +36,6 @@ create-test-db:
 .PHONY: delete-test-db
 delete-test-db:
 	docker kill postgis-test-db
-	docker rm postgis-test-db
 
 .PHONY: test-from-zero
 test-from-zero:
