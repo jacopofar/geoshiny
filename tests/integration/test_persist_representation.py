@@ -73,7 +73,8 @@ def nice_renderer(osm_id: int, shape: BaseGeometry, d: dict):
         water_style.shape = affinity.rotate(shape, 90, origin="centroid")
         return water_style
 
-
+# fail because of https://github.com/Toblerity/Shapely/issues/1100
+@pytest.mark.xfail
 @pytest.mark.asyncio
 async def test_persist_and_retrieve(tmpdir):
     # northern part of Rostock, Germany
