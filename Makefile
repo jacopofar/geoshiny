@@ -18,7 +18,17 @@ install-test-all:
 	# NOTE: shapely must be installed like this or it breaks :/
 	# also https://github.com/python-poetry/poetry/issues/1316
 	.venv/bin/python3 -m pip install --no-binary Shapely -r requirements.txt
-	.venv/bin/python3 -m pytest --cov=geoshiny --cov-report html
+	# and now the GDAL binary juggling!
+	# GDAL works differently depending on which commands were available in the path when installing it!
+	# also, wants numpy installed beforehand, or it installs without errors and then breaks at runtime
+	# so, first uninstall GDAL
+	.venv/bin/python3 -m pip uninstall -y gdal
+	# then reinstall it, now numpy is installed so the effect will be different
+	# also here the version is the latest, no matter what was written in the requirements.txt
+	# but at this point is a lesser evil
+	PATH=.venv/bin:$$PATH .venv/bin/python3 -m pip install --no-binary GDAL GDAL
+	# same path consideration needed when running the test
+	PATH=.venv/bin:$$PATH .venv/bin/python3 -m pytest --cov=geoshiny --cov-report html
 
 .PHONY: create-test-db
 create-test-db:
