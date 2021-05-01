@@ -111,4 +111,11 @@ async def geoms_in_extent(
     # can use a cursor in asyncpg to give a stream of objects
     # also, subclass the Record or lazily adapt it to something with proper types
     query = build_tags_join_query(schema, tuple(tables))
-    return await conn.fetch(query, *extent.as_epsg3857())
+    # use a cursor and build a list to not stress the DB memory too much
+    # later this could be directly returned
+    ret = []
+    async with conn.transaction():
+        async for record in conn.cursor(query, *extent.as_epsg3857()):
+            ret.append(record)
+
+    return ret
