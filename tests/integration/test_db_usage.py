@@ -1,7 +1,7 @@
 import pytest
 
-from geocrazy.types import ExtentDegrees
-from geocrazy.database_extract import data_from_extent
+from geoshiny.types import ExtentDegrees
+from geoshiny.database_extract import data_from_extent
 
 
 @pytest.mark.asyncio

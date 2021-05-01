@@ -1,7 +1,7 @@
 import pytest
 
-from geocrazy.types import ExtentDegrees
-from geocrazy.parse_osm_xml import xml_to_map_obj
+from geoshiny.types import ExtentDegrees
+from geoshiny.parse_osm_xml import xml_to_map_obj
 
 
 @pytest.mark.skip(reason="This has to be reimplemented or just removed")

@@ -15,7 +15,7 @@ from osgeo import osr
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import shape, mapping, asShape
 
-from geocrazy.types import ExtentDegrees, GeomRepresentation, ObjectStyle
+from geoshiny.types import ExtentDegrees, GeomRepresentation, ObjectStyle
 
 logger = logging.getLogger(__name__)
 

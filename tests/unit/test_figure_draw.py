@@ -2,8 +2,8 @@ import json
 
 from shapely.geometry import shape
 
-from geocrazy.types import ExtentDegrees
-from geocrazy.draw_helpers import render_shapes_to_figure, figure_to_numpy
+from geoshiny.types import ExtentDegrees
+from geoshiny.draw_helpers import render_shapes_to_figure, figure_to_numpy
 
 # Geometry types
 #  'Point',

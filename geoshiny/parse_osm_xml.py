@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Dict, List, Optional, Tuple
 from xml.dom.minidom import parse
 
-from geocrazy.types import ExtentDegrees
+from geoshiny.types import ExtentDegrees
 
 
 @dataclass

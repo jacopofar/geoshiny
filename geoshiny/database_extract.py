@@ -9,7 +9,7 @@ import shapely.geometry
 import shapely.wkb
 from shapely.geometry.base import BaseGeometry
 
-from geocrazy.types import ExtentDegrees
+from geoshiny.types import ExtentDegrees
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 import re
 
-from geocrazy.database_extract import build_tags_join_query
+from geoshiny.database_extract import build_tags_join_query
 
 
 def test_ebuild_tags_join_query():

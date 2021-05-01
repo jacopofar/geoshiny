@@ -4,9 +4,9 @@ from typing import Union
 import pytest
 from shapely.geometry.base import BaseGeometry
 
-from geocrazy.types import ExtentDegrees, ObjectStyle
-from geocrazy.database_extract import data_from_extent
-from geocrazy.draw_helpers import (
+from geoshiny.types import ExtentDegrees, ObjectStyle
+from geoshiny.database_extract import data_from_extent
+from geoshiny.draw_helpers import (
     data_to_representation,
     data_to_representation_file,
     file_to_representation,

@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from geocrazy.draw_helpers import save_to_geoTIFF
-from geocrazy.parse_osm_xml import xml_to_map_obj
-from geocrazy.types import ExtentDegrees
+from geoshiny.draw_helpers import save_to_geoTIFF
+from geoshiny.parse_osm_xml import xml_to_map_obj
+from geoshiny.types import ExtentDegrees
 
 
 def test_save_geotiff(tmpdir):
