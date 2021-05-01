@@ -1,21 +1,21 @@
+import asyncio
 import logging
+from typing import Optional
 
-from geocrazy import import_hell
+from geoshiny import import_hell
 
+# this fixes some weird import issues and raises an error
 import_hell.import_gdal_shapely(wait=False)
 
 from osgeo import gdal
 from shapely.geometry.base import BaseGeometry
 
-from geocrazy.types import (
+from geoshiny.types import (
     ExtentDegrees,
-    OSMRelation,
-    OSMWay,
     ObjectStyle,
 )
-from geocrazy.parse_osm_xml import xml_to_map_obj
-from geocrazy.database_extract import data_from_extent
-from geocrazy.draw_helpers import (
+from geoshiny.database_extract import data_from_extent
+from geoshiny.draw_helpers import (
     figure_to_numpy,
     save_to_geoTIFF,
     data_to_representation,
@@ -30,58 +30,33 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def asphalt_way_callback(w: OSMWay):
-    if w.attributes is None:
-        return
-    if w.attributes.get("surface") == "asphalt":
-        return (128, 128, 128)
-
-
-def any_way_callback(w: OSMWay):
-    if w.attributes is not None:
-        logger.info(w.attributes)
-    return (250, 250, 250)
-
-
-def any_rel_callback(r: OSMRelation):
-    return (250, 250, 250)
-
-
-def grey_all_callback(x):
-    return dict(color="grey", alpha=0.5)
-
-
-def nice_representation(w: OSMWay):
-    if w.attributes is None:
-        return
-
-    if w.attributes.get("bicycle") == "designated":
+def nice_representation(osm_id: int, geom, tags: dict) -> Optional[dict]:
+    if tags.get("bicycle") == "designated":
         return dict(path_type="bike")
-    if "water" in w.attributes:
+    if "water" in tags:
         return dict(surface_type="water")
 
-    if w.attributes.get("landuse") == "grass":
+    if tags.get("landuse") == "grass":
         return dict(surface_type="grass")
-    if w.attributes.get("leisure") == "park":
+    if tags.get("leisure") == "park":
         return dict(surface_type="grass")
-    if w.attributes.get("natural") == "scrub":
+    if tags.get("natural") == "scrub":
         return dict(surface_type="wild grass")
 
-    if "building" in w.attributes and w.attributes["building"] != "no":
-        if "building:levels" not in w.attributes:
+    if "building" in tags and tags["building"] != "no":
+        if "building:levels" not in tags:
             return dict(surface_type="building")
         else:
             try:
-                level_num = float(w.attributes["building:levels"])
+                level_num = float(tags["building:levels"])
             except ValueError:
-                logger.debug(
-                    f"Invalid number of floors: {w.attributes['building:levels']}"
-                )
+                logger.debug(f"Invalid number of floors: {tags['building:levels']}")
                 return dict(surface_type="building")
             return dict(surface_type="building", floors=level_num)
+    return None
 
 
-def nice_renderer(d: dict, shape: BaseGeometry):
+def nice_renderer(osm_id: int, shape: BaseGeometry, d: dict):
     water_style = ObjectStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
     grass_style = ObjectStyle(facecolor="green", linewidth=0.1)
     wild_grass_style = ObjectStyle(facecolor="darkgreen", linewidth=0.1)
@@ -116,31 +91,44 @@ def nice_renderer(d: dict, shape: BaseGeometry):
 
 
 if __name__ == "__main__":
-    # this cover most of Berlin, takes 5 minutes
+    # # Most of Berlin
     # e = ExtentDegrees(
     #     latmin=52.4650,
     #     latmax=52.5805,
     #     lonmin=13.2911,
     #     lonmax=13.5249
     # )
-    # d = data_from_extent(e)
-    # img = asphalt_map(d, e)
-    # save_to_geoTIFF(e, img, 'all_berlin.db.asphalt.tif')
 
-    # area covered in original_piece.png, takes 38s
+    # # Berlin central station
+    # extent = ExtentDegrees(
+    #     latmin=52.5275,
+    #     latmax=52.5356,
+    #     lonmin=13.3613,
+    #     lonmax=13.3768,
+    # )
+    # # small piece of Central Park in NY
+    # extent = ExtentDegrees(
+    #     latmin=40.78040,
+    #     latmax=40.78280,
+    #     lonmin=-73.96050,
+    #     lonmax=-73.96350,
+    # )
+
+    # # Bicocca University main buildings, Milan, Italy
+    # extent = ExtentDegrees(
+    #     latmin=45.5098,
+    #     latmax=45.5200,
+    #     lonmin=9.2041,
+    #     lonmax=9.2195,
+    # )
+    # northern part or Rostock, Germany
     extent = ExtentDegrees(
-        latmin=52.5275,
-        latmax=52.5356,
-        lonmin=13.3613,
-        lonmax=13.3768,
+        latmin=54.0960,
+        latmax=54.2046,
+        lonmin=12.0029,
+        lonmax=12.1989,
     )
-    # small piece of Central Park in NY
-    extent = ExtentDegrees(
-        latmin=40.78040,
-        latmax=40.78280,
-        lonmin=-73.96050,
-        lonmax=-73.96350,
-    )
+
     # most of Berlin, takes:
     # 6 minutes to read all the data
     # 4 minutes to generate the figure
@@ -154,7 +142,8 @@ if __name__ == "__main__":
     #     lonmax=13.6368,
     # )
 
-    db_data = data_from_extent(extent)
+    loop = asyncio.get_event_loop()
+    db_data = loop.run_until_complete(data_from_extent(extent))
     logger.info("Data has been read, processing...")
     reprs = data_to_representation(db_data, entity_callback=nice_representation)
     logger.info("Representation has been calculated, generating figure...")
@@ -178,7 +167,7 @@ if __name__ == "__main__":
 
     import json
     from shapely.geometry import shape
-    from geocrazy.draw_helpers import render_shapes_to_figure, figure_to_numpy
+    from geoshiny.draw_helpers import render_shapes_to_figure, figure_to_numpy
 
     line_geojson = '{"type":"Polygon","coordinates":[[[13.3730741,52.528892399],[13.3732394,52.528739999],[13.3733324,52.528769599],[13.3734522,52.528810199],[13.3736096,52.528858799],[13.3744697,52.529166499],[13.3747036,52.529250199],[13.3748861,52.529311299],[13.3749662,52.529338699],[13.3745283,52.529799099],[13.3742478,52.529694699],[13.374134,52.529808599],[13.3737474,52.529675299],[13.373759,52.529665399],[13.3738839,52.529534099],[13.3736457,52.529450199],[13.3735978,52.529432699],[13.3738416,52.529166699],[13.3730741,52.528892399]],[[13.3733161,52.528932899],[13.3735506,52.529015099],[13.3736102,52.528954699],[13.3733767,52.528872999],[13.3733161,52.528932899]],[[13.3736913,52.529063299],[13.3738527,52.529120799],[13.3739092,52.529059099],[13.3737474,52.529001599],[13.3736913,52.529063299]],[[13.3738146,52.529369699],[13.3738877,52.529395999],[13.373992,52.529289999],[13.3739195,52.529263899],[13.3738146,52.529369699]],[[13.3739585,52.529161699],[13.374125,52.529221599],[13.3741824,52.529159999],[13.3740189,52.529101199],[13.3739585,52.529161699]],[[13.3739754,52.529504299],[13.3742818,52.529615199],[13.3744435,52.529445099],[13.3741371,52.529335599],[13.3739754,52.529504299]],[[13.3742729,52.529277899],[13.3744951,52.529357999],[13.3745516,52.529295799],[13.374334,52.529217499],[13.3742729,52.529277899]],[[13.3744009,52.529653699],[13.3744945,52.529685499],[13.3746104,52.529557999],[13.3745186,52.529527799],[13.3744009,52.529653699]],[[13.374605,52.529450799],[13.3746828,52.529479599],[13.3747424,52.529415999],[13.3746646,52.529386499],[13.374605,52.529450799]]]}'
     multipolygon = shape(json.loads(line_geojson))

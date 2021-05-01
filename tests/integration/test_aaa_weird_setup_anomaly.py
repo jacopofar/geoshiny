@@ -1,6 +1,11 @@
 import json
 import subprocess
 
+from geoshiny import import_hell
+
+# this fixes some weird import issues and raises an error
+import_hell.import_gdal_shapely(wait=False)
+
 
 def test_aaaaa_weird_anomaly():
     """Okay, this is weird.
@@ -72,7 +77,7 @@ def test_aaaaa_weird_anomaly():
     # if there's an error, the trick works
     if "ModuleNotFoundError: No module named '_gdal'" in std_err:
         proc = subprocess.Popen(
-            """python3 -c 'from geocrazy import import_hell;import_hell.import_gdal_shapely(wait=False);from shapely.geometry import shape;import osgeo; print("import workaround successful")'""",  # NOQA
+            """python3 -c 'from geoshiny import import_hell;import_hell.import_gdal_shapely(wait=False);from shapely.geometry import shape;import osgeo; print("import workaround successful")'""",  # NOQA
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=True,

@@ -1,10 +1,10 @@
 .PHONY: mypy
 mypy:
-	python3 -m mypy geocrazy
+	python3 -m mypy geoshiny
 
 .PHONY: test
 test:
-	python3 -m pytest --cov=geocrazy --cov-report html
+	python3 -m pytest --cov=geoshiny --cov-report html
 
 .PHONY: install-test-all
 install-test-all:
@@ -18,9 +18,9 @@ install-test-all:
 	# NOTE: shapely must be installed like this or it breaks :/
 	# also https://github.com/python-poetry/poetry/issues/1316
 	.venv/bin/python3 -m pip install --no-binary Shapely -r requirements.txt
-	.venv/bin/python3 -m pytest --cov=geocrazy --cov-report html
+	.venv/bin/python3 -m pytest --cov=geoshiny --cov-report html
 
-.PHONY: create-test-db:s
+.PHONY: create-test-db
 create-test-db:
 	docker run --name postgis-test-db -p 15432:5432 -e POSTGRES_PASSWORD=testpassword -d postgis/postgis:13-master
 	docker exec postgis-test-db sh -c 'until pg_isready; do echo "Waiting for the DB to be up..."; sleep 4; done'
@@ -32,6 +32,3 @@ create-test-db:
 	# create empty schema
 	docker cp tests/sampledata/schema.sql postgis-test-db:/schema.sql
 	docker exec postgis-test-db sh -c "psql -U postgres -f /schema.sql osm_data"
-	# insert demo data
-	docker cp tests/sampledata/sample_data.sql.gz postgis-test-db:/sample_data.sql.gz
-	docker exec postgis-test-db sh -c "gunzip < sample_data.sql.gz | psql -v ON_ERROR_STOP=1 -U postgres osm_data"|wc -l

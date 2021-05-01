@@ -1,4 +1,4 @@
-from geocrazy.types import ExtentDegrees
+from geoshiny.types import ExtentDegrees
 
 
 def test_extent_operations():

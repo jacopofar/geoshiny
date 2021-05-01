@@ -1,11 +1,12 @@
 import filecmp
 from typing import Union
 
+import pytest
 from shapely.geometry.base import BaseGeometry
 
-from geocrazy.types import ExtentDegrees, OSMWay, OSMRelation, OSMNode, ObjectStyle
-from geocrazy.database_extract import data_from_extent
-from geocrazy.draw_helpers import (
+from geoshiny.types import ExtentDegrees, ObjectStyle
+from geoshiny.database_extract import data_from_extent
+from geoshiny.draw_helpers import (
     data_to_representation,
     data_to_representation_file,
     file_to_representation,
@@ -13,11 +14,8 @@ from geocrazy.draw_helpers import (
 )
 
 
-def universal_representation(e: Union[OSMWay, OSMRelation, OSMNode]):
-    if e.attributes is None:
-        return dict(val=1)
-    else:
-        return dict(val=1 + len(e.attributes))
+def universal_representation(osm_id: int, geom, tags: dict):
+    return dict(val=1 + len(tags))
 
 
 def messy_renderer(d: dict, shape: BaseGeometry = None):
@@ -30,14 +28,15 @@ def messy_renderer(d: dict, shape: BaseGeometry = None):
     raise ValueError(f"Unknown shape type {shape.type}")
 
 
-def test_persist_and_retrieve(tmpdir):
+@pytest.mark.asyncio
+async def test_persist_and_retrieve(tmpdir):
     extent = ExtentDegrees(
         latmin=52.5275,
         latmax=52.5356,
         lonmin=13.3613,
         lonmax=13.3768,
     )
-    data = data_from_extent(extent)
+    data = await data_from_extent(extent)
     target_file = tmpdir.join("representation.jsonl")
     with open(target_file, "w") as tfh:
         data_to_representation_file(

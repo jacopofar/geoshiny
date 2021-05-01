@@ -1,7 +1,7 @@
 from pytest import approx
 
-from geocrazy.draw_helpers import coord_to_pixel
-from geocrazy.types import ExtentDegrees
+from geoshiny.draw_helpers import coord_to_pixel
+from geoshiny.types import ExtentDegrees
 
 
 def test_coord_to_pixel():

@@ -1,11 +1,18 @@
 import numpy as np
+import pytest
 
-from geocrazy.draw_helpers import save_to_geoTIFF
-from geocrazy.parse_osm_xml import xml_to_map_obj
+from geoshiny.draw_helpers import save_to_geoTIFF
+from geoshiny.parse_osm_xml import xml_to_map_obj
+from geoshiny.types import ExtentDegrees
 
 
 def test_save_geotiff(tmpdir):
-    _features, extent = xml_to_map_obj("tests/sampledata/museum_insel_berlin.osm")
+    extent = ExtentDegrees(
+        latmin=40.78040,
+        latmax=40.78280,
+        lonmin=-73.96050,
+        lonmax=-73.96350,
+    )
     target_file = tmpdir.join("blabla.tiff")
     save_to_geoTIFF(extent, np.ndarray((100, 100, 3)), str(target_file))
     assert len(tmpdir.listdir()) == 1
