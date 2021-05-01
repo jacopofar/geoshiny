@@ -37,8 +37,15 @@ create-test-db:
 delete-test-db:
 	docker kill postgis-test-db
 
+.PHONY: cleanup-and-fail
+cleanup-and-fail:
+	echo "cleaning up after failure..."
+	make delete-test-db
+	false
+
 .PHONY: test-from-zero
 test-from-zero:
 	make create-test-db
-	PGIS_CONN_STR=postgres://postgres:testpassword@localhost:15432/osm_data make install-test-all
+	# macOS ships with a vintage Make, so ONESHELL + bash trap cannot be used and this is an alternative
+	PGIS_CONN_STR=postgres://postgres:testpassword@localhost:15432/osm_data make install-test-all || make cleanup-and-fail
 	make delete-test-db
