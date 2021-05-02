@@ -2,12 +2,12 @@ import asyncio
 import logging
 from typing import Optional
 
-from geoshiny import import_hell
+# TODO this should not be needed, and makes sense only for the full GDAL install
+# what to do with that?
+# from geoshiny import import_hell
+# # this fixes some weird import issues and raises an error
+# import_hell.import_gdal_shapely(wait=False)
 
-# this fixes some weird import issues and raises an error
-import_hell.import_gdal_shapely(wait=False)
-
-from osgeo import gdal
 from shapely.geometry.base import BaseGeometry
 
 from geoshiny.types import (

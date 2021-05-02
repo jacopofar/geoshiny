@@ -17,9 +17,6 @@ pytest==6.2.3
 pytest-asyncio==0.15.1
 pytest-cov==2.11.1
 
-# util to read and use .env files
-dotenv-cli==2.2.0
-
 # linting
 flake8==3.9.1
 

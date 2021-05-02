@@ -10,8 +10,6 @@ from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 import numpy as np
 from numpy import asarray, concatenate, ones
-from osgeo import gdal
-from osgeo import osr
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import shape, mapping, asShape
 
@@ -276,6 +274,14 @@ def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
     fname : str
         The ouput path, relative or absolute
     """
+    try:
+        from osgeo import gdal
+        from osgeo import osr
+    except ModuleNotFoundError:
+        logger.fatal(
+            "GDAL not found, cannot produce geoTIFF images. Try installing geoshiny[geotiff]"
+        )
+        raise from None
     nx, ny = image.shape[:2]
     # this is because the image is distorted if not square
     assert nx == ny, "Image is not a square"
