@@ -41,8 +41,8 @@ def build_tags_join_query(schema: str, tables: Tuple[str]) -> str:
     return "\n UNION ALL \n ".join(subs)
 
 
-async def get_connection() -> asyncpg.Connection:
-    conn = await asyncpg.connect(dsn=environ["PGIS_CONN_STR"])
+async def get_connection(dsn: str) -> asyncpg.Connection:
+    conn = await asyncpg.connect(dsn=dsn)
 
     def encode_geometry(geometry):
         if not hasattr(geometry, "__geo_interface__"):
@@ -69,9 +69,13 @@ async def get_connection() -> asyncpg.Connection:
 
 # TODO define return types for this
 async def data_from_extent(
-    extent: ExtentDegrees, schema: str = "osm", tables: Optional[List[str]] = None
+    extent: ExtentDegrees, schema: str = "osm",
+    dsn=None,
+    tables: Optional[List[str]] = None
 ):
-    conn = await get_connection()
+    if dsn is None:
+        dsn = environ["PGIS_CONN_STR"]
+    conn = await get_connection(dsn)
     if tables is None:
         records = await conn.fetch(
             """

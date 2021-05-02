@@ -277,11 +277,10 @@ def save_to_geoTIFF(bbox: ExtentDegrees, image: np.ndarray, fname: str):
     try:
         from osgeo import gdal
         from osgeo import osr
-    except ModuleNotFoundError:
-        logger.fatal(
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
             "GDAL not found, cannot produce geoTIFF images. Try installing geoshiny[geotiff]"
-        )
-        raise from None
+        ) from exc
     nx, ny = image.shape[:2]
     # this is because the image is distorted if not square
     assert nx == ny, "Image is not a square"
