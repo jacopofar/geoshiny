@@ -27,6 +27,18 @@ The connection string for this database has to be put in the environment variabl
 
     export PGIS_CONN_STR=postgres://username:password@localhost:5432/osm_data
 
+## Installation
+
+You need GDAL installed on your computer, the procedure depends on the system and can be tricky.
+Then, requirements.txt dependencies need to be installed, for example with
+
+    python3 -m pip install --no-binary Shapely -r requirements.txt
+
+there are a lot of bugs related to the way GDAL is installed, for example you may need to reinstall it after installing numpy, and avoid using the wheel but let it build (`python3 -m pip install --no-binary GDAL GDAL`).
+
+Also, GDAL seems to need to see the gdal commands when building, or it fails at runtime. So if you are using a virtualenv you'll need to activate it first or alter you PATH if you are in a CI pipeline (check the Makefile for examples).
+
+I am all hears for alternatives or reliable ways to install and run GDAL and Shapely.
 
 ## Usage
 
@@ -105,9 +117,15 @@ img2.savefig("image2.png")
 
 ```
 
+## Testing
+
+To run the test you need git-lfs and docker installed. If you didn't have git-lfs enabled before cloning the repo, you have to do `git lfs pull` to download the SQL dump file first.
+Use `make test-from-zero` to perform a complete integration test, it will use a dump of a small postgis DB of around 200 MB to create a dockerized postgis instance and run scripts against that. The instance id deleted after the test or in case of errors.
+
 # TODO
 
-- [ ] Proper automated tests with a reasonable data fixture
+- [x] "Proper" automated tests with a reasonable data fixture
+- [ ] Examine the possibility of removing GDAL or making it optional, it's a pain to install
 - [ ] Add labeling/text
 - [ ] XKCD style output (from matplotlib, should work out of the box)
 - [ ] Offer both async and sync access if possible, hiding the loop to sync users
