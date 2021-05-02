@@ -35,6 +35,6 @@ setup(
             "flake8",
             # type checking
             "mypy",
-        ],s
+        ],
     },
 )
