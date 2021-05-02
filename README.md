@@ -119,11 +119,12 @@ img2.savefig("image2.png")
 
 ## Testing
 
-To run the test you need git-lfs installed, and docker, it will download a dump of a small postgis DB of around 200 MB and run scripts on that. Use `make test-from-zero`.
+To run the test you need git-lfs and docker installed. If you didn't have git-lfs enabled before cloning the repo, you have to do `git lfs pull` to download the SQL dump file first.
+Use `make test-from-zero` to perform a complete integration test, it will use a dump of a small postgis DB of around 200 MB to create a dockerized postgis instance and run scripts against that. The instance id deleted after the test or in case of errors.
 
 # TODO
 
-- [ ] Proper automated tests with a reasonable data fixture
+- [x] "Proper" automated tests with a reasonable data fixture
 - [ ] Examine the possibility of removing GDAL or making it optional, it's a pain to install
 - [ ] Add labeling/text
 - [ ] XKCD style output (from matplotlib, should work out of the box)
