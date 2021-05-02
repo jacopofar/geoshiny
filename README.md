@@ -29,7 +29,10 @@ The connection string for this database has to be put in the environment variabl
 
 ## Installation
 
-You need GDAL installed on your computer, the procedure depends on the system and can be tricky.
+The default installation does not require GDAL and cannot generate geoTIFF. That functionality is in the `geotiff` extra.
+
+If you want to generate geoTIFF images, you need GDAL installed on your computer, the procedure depends on the system and can be tricky.
+
 Then, requirements.txt dependencies need to be installed, for example with
 
     python3 -m pip install --no-binary Shapely -r requirements.txt
@@ -38,9 +41,11 @@ there are a lot of bugs related to the way GDAL is installed, for example you ma
 
 Also, GDAL seems to need to see the gdal commands when building, or it fails at runtime. So if you are using a virtualenv you'll need to activate it first or alter you PATH if you are in a CI pipeline (check the Makefile for examples).
 
-I am all hears for alternatives or reliable ways to install and run GDAL and Shapely.
+I still have to find reliable ways to install and import GDAL and Shapely without this import order mess.
 
 ## Usage
+
+NOTE: this is under development, usage will change soon
 
 The library expects two callbacks.
 
