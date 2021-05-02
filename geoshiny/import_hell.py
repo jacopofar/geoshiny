@@ -37,5 +37,5 @@ def import_gdal_shapely(wait: bool = False):
         logger.warning(std_err)
         if wait:
             time.sleep(5)
-        import osgeo
-        from shapely.geometry import shape
+        import osgeo # NOQA
+        from shapely.geometry import shape # NOQA

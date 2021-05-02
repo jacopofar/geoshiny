@@ -7,7 +7,6 @@ from typing import List, Optional, Tuple
 import asyncpg
 import shapely.geometry
 import shapely.wkb
-from shapely.geometry.base import BaseGeometry
 
 from geoshiny.types import ExtentDegrees
 

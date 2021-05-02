@@ -1,6 +1,5 @@
-from dataclasses import dataclass, field, fields
-from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass, fields
+from typing import Optional
 
 from pyproj import Transformer
 from shapely.geometry.base import BaseGeometry

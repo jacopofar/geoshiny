@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import json
 import logging
 from io import TextIOWrapper
-from typing import Any, Dict, Callable, Iterator, List, Optional, Tuple, Union
+from typing import Dict, Callable, Iterator, List, Optional, Tuple, Union
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -11,9 +11,9 @@ from matplotlib.path import Path
 import numpy as np
 from numpy import asarray, concatenate, ones
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import shape, mapping, asShape
+from shapely.geometry import mapping, asShape
 
-from geoshiny.types import ExtentDegrees, GeomRepresentation, ObjectStyle
+from geoshiny.types import ExtentDegrees, ObjectStyle
 
 logger = logging.getLogger(__name__)
 
