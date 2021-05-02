@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="geoshiny",
-    version="0.0.1",
+    version="0.0.2",
     description="GIS data renderer",
     url="https://github.com/jacopofar/geoshiny",
     long_description=open("README.md").read(),
@@ -16,7 +16,7 @@ setup(
     include_package_data=False,
     install_requires=[
         # display, and quick troubleshooting
-        "matplotlib"
+        "matplotlib",
         # everything math
         "numpy",
         # database access
