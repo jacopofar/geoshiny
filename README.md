@@ -8,7 +8,6 @@ __NOTE__: this software is under development, the interface and the functionalit
 
 * Generate customized maps of cities and small regions
 * Outputs:
-  * geo-referenced TIFF (GeoTIFF)
   * SVG
   * PNG
   * many others
@@ -29,9 +28,9 @@ The connection string for this database has to be put in the environment variabl
 
 ## Installation
 
-The default installation does not require GDAL and cannot generate geoTIFF. That functionality is in the `geotiff` extra.
+You will probably need to install the `geos` library on your system, on Ubuntu for example is the package `libgeos-dev`, on macOS using bres it's `geos`.
 
-If you want to generate geoTIFF images, you need GDAL installed on your computer, the procedure depends on the system and can be tricky.
+The default installation does not require GDAL and cannot generate geoTIFF. That functionality is in the `geotiff` extra and you will need the GDAL libraries installed on your computer, the procedure depends on the OS and can be tricky.
 
 Then, requirements.txt dependencies need to be installed, for example with
 
@@ -41,7 +40,7 @@ there are a lot of bugs related to the way GDAL is installed, for example you ma
 
 Also, GDAL seems to need to see the gdal commands when building, or it fails at runtime. So if you are using a virtualenv you'll need to activate it first or alter you PATH if you are in a CI pipeline (check the Makefile for examples).
 
-I still have to find reliable ways to install and import GDAL and Shapely without this import order mess.
+I still have to find reliable ways to install and import GDAL and Shapely without this [import order problem](https://github.com/OSGeo/gdal/issues/3779), so for now I use only Shapely.
 
 ## Usage
 
