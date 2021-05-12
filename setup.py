@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="geoshiny",
-    version="0.0.2",
+    version="0.0.3",
     description="GIS data renderer",
     url="https://github.com/jacopofar/geoshiny",
     long_description=open("README.md").read(),
