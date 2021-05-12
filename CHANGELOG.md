@@ -8,3 +8,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - GDAL is now an optional dependency, under the `[geotiff]` extra
+- A simple `generate_chart` helper allows the usage as a one-liner

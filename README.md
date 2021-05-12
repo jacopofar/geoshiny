@@ -47,18 +47,19 @@ I still have to find reliable ways to install and import GDAL and Shapely withou
 
 NOTE: this is under development, usage will change soon
 
-The library expects two callbacks.
+The library expects two callbacks, __representation__ and __renderer__.
 
-One is the `representation`, which is called for each map feature in the given extent, it receives the OSM tags as an input and returns `None` for features to be ignored or an arbitrary Python object (usually a dictionary) with the relevant information to represent. Can also alter the Shapely geometry.
+The `representation` is called for each map feature in the given extent, receives the OSM tags as an input and returns `None` for features to be ignored or an arbitrary Python object (usually a dictionary) with the relevant information to represent. Can also alter the Shapely geometry.
 
-The other is `renderer`, and it will receive the output of the `representation` function and produce the matplotlib attributes like color and alpha.
+The `renderer` will receive the output of the `representation` function and produce the matplotlib attributes like color and alpha.
 
-The representation can be stored in JSONL with the geoJSON data using `file_to_representation`, doing so you can generateb the representation once and render different extents with different styles easily without even running a database instance.
+So one takes care of deciding *what* to represent and the other of *how* to represent it. This decoupling allows to change representation and store intermediate values in a file.
+Using `file_to_representation` you can generate the representation once and render different extents with different styles easily without even running a database instance.
 
 ```python
 import asyncio
 
-from geoshiny.database_extract import data_from_extent
+from geoshiny.database_extract import raw_data_from_extent
 from geoshiny.types import (
     ExtentDegrees,
     ObjectStyle,
@@ -98,8 +99,16 @@ extent = ExtentDegrees(
         lonmin=12.0029,
         lonmax=12.1989,
     )
+# this directly renders to a file
+generate_chart(
+  'generated.png',
+  extent,
+  representation,
+  renderer,
+)
+# but you can run the steps yourself
 loop = asyncio.get_event_loop()
-db_data = loop.run_until_complete(data_from_extent(extent))
+db_data = loop.run_until_complete(raw_data_from_extent(extent))
 reprs = data_to_representation(db_data, entity_callback=representation)
 
 db_img = representation_to_figure(reprs, extent, renderer, figsize=3000)
@@ -119,10 +128,13 @@ img2 = representation_to_figure(
         figsize=3000,
     )
 img2.savefig("image2.png")
+img2.savefig("image2.svg")
 
 ```
 
 ## Testing
+
+NOTE: this will also probably change, I'm looking at ways to run the tests without git-lfs
 
 To run the test you need git-lfs and docker installed. If you didn't have git-lfs enabled before cloning the repo, you have to do `git lfs pull` to download the SQL dump file first.
 Use `make test-from-zero` to perform a complete integration test, it will use a dump of a small postgis DB of around 200 MB to create a dockerized postgis instance and run scripts against that. The instance id deleted after the test or in case of errors.
@@ -130,16 +142,17 @@ Use `make test-from-zero` to perform a complete integration test, it will use a 
 # TODO
 
 - [x] "Proper" automated tests with a reasonable data fixture
-- [ ] Examine the possibility of removing GDAL or making it optional, it's a pain to install
+- [x] Examine the possibility of removing GDAL or making it optional, it's a pain to install
 - [ ] Add labeling/text
 - [ ] XKCD style output (from matplotlib, should work out of the box)
+- [ ] layers/pipelines to further process the output
 - [ ] Offer both async and sync access if possible, hiding the loop to sync users
 - [ ] Visual comparison of output images (may require opencv as a test dependency, is it worth it?)
 - [ ] Helper to generate world files (https://en.wikipedia.org/wiki/World_file)
 - [ ] 3D output (check QGIS formats / glTF)
 - [ ] tileset output?
 - [ ] Create and document helpers to make the usage simpler (once the interface is stabilized)
-- [ ] Exmaples and screenshot gallery
+- [ ] Examples and screenshot gallery
 - [ ] Spatialite support?
 - [ ] Optional pipeline definition interface to combine processing steps?
 - [ ] Graph functionalities (e.g. show road distance from a set of POI) ?

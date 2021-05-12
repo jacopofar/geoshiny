@@ -2,11 +2,12 @@ from os import environ
 from functools import lru_cache
 import json
 import logging
-from typing import List, Optional, Tuple
+from typing import AsyncGenerator, Callable, List, Optional, Tuple
 
 import asyncpg
 import shapely.geometry
 import shapely.wkb
+from shapely.geometry.base import BaseGeometry
 
 from geoshiny.types import ExtentDegrees
 
@@ -65,16 +66,11 @@ async def get_connection(dsn: str) -> asyncpg.Connection:
     )
     return conn
 
-
-# TODO define return types for this
-async def data_from_extent(
-    extent: ExtentDegrees, schema: str = "osm",
-    dsn=None,
-    tables: Optional[List[str]] = None
-):
-    if dsn is None:
-        dsn = environ["PGIS_CONN_STR"]
-    conn = await get_connection(dsn)
+async def geometry_tables(
+    conn,
+    tables: Optional[List[str]] = None,
+    schema: str = "osm",
+    ) -> List[str]:
     if tables is None:
         records = await conn.fetch(
             """
@@ -101,24 +97,55 @@ async def data_from_extent(
             geom_tables.append(t)
         else:
             raise ValueError(f"Table {full_name} has no known geometry type")
+    return geom_tables
+
+async def raw_data_from_extent(
+    extent: ExtentDegrees,
+    schema: str = "osm",
+    dsn=None,
+    tables: Optional[List[str]] = None
+) -> List[asyncpg.Record]:
+    if dsn is None:
+        dsn = environ["PGIS_CONN_STR"]
+    conn = await get_connection(dsn)
+    geom_tables = await geometry_tables(conn, tables, schema)
+
     # TODO return async generators instead?
-    geoms = await geoms_in_extent(conn, schema, extent, geom_tables)
+    # would force the user to use async
+    ret = []
+    async for r in geoms_in_extent(conn, schema, extent, geom_tables):
+        ret.append(r)
+    return ret
 
-    return geoms
+async def representation_from_extent(
+    extent: ExtentDegrees,
+    representer: Callable[[int, BaseGeometry, dict], Optional[dict]],
+    schema: str = "osm",
+    dsn=None,
+    tables: Optional[List[str]] = None
+) -> List[Tuple[int, BaseGeometry, dict]]:
+    if dsn is None:
+        dsn = environ["PGIS_CONN_STR"]
+    conn = await get_connection(dsn)
+    geom_tables = await geometry_tables(conn, tables, schema)
 
+    # TODO return async generators instead?
+    # would force the user to use async
+    ret = []
+    async for (osm_id, geom, tags) in geoms_in_extent(conn, schema, extent, geom_tables):
+        representation = representer(osm_id, geom, tags)
+        if representation is not None:
+            ret.append((osm_id, geom, representation))
+    return ret
 
 async def geoms_in_extent(
     conn: asyncpg.Connection, schema: str, extent: ExtentDegrees, tables: List[str]
-):
-    # TODO return an async generator instead?
-    # can use a cursor in asyncpg to give a stream of objects
+) -> AsyncGenerator[asyncpg.Record, None]:
+    # TODO what is the return type for this?
     # also, subclass the Record or lazily adapt it to something with proper types
     query = build_tags_join_query(schema, tuple(tables))
     # use a cursor and build a list to not stress the DB memory too much
     # later this could be directly returned
-    ret = []
     async with conn.transaction():
         async for record in conn.cursor(query, *extent.as_epsg3857()):
-            ret.append(record)
-
-    return ret
+            yield record

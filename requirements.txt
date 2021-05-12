@@ -1,7 +1,5 @@
-# generate geoTIFF, manipulate coordinates
-GDAL==3.2.2
 # display, and quick troubleshooting
-matplotlib==3.4.1
+matplotlib==3.4.2
 # everything math
 numpy==1.20.2
 # database access
@@ -13,12 +11,12 @@ pyproj==3.0.1
 Shapely==1.7.1 --no-binary=Shapely
 
 # tests
-pytest==6.2.3
+pytest==6.2.4
 pytest-asyncio==0.15.1
 pytest-cov==2.11.1
 
 # linting
-flake8==3.9.1
+flake8==3.9.2
 
 # type checking
 mypy==0.812

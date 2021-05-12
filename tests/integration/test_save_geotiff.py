@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 
 from geoshiny.draw_helpers import save_to_geoTIFF
-from geoshiny.parse_osm_xml import xml_to_map_obj
 from geoshiny.types import ExtentDegrees
 
-
+# this test requires the GDAL dependency
+@pytest.mark.xfail
 def test_save_geotiff(tmpdir):
     extent = ExtentDegrees(
         latmin=40.78040,

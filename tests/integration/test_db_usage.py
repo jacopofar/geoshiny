@@ -1,7 +1,7 @@
 import pytest
 
 from geoshiny.types import ExtentDegrees
-from geoshiny.database_extract import data_from_extent
+from geoshiny.database_extract import raw_data_from_extent
 
 
 @pytest.mark.asyncio
@@ -12,6 +12,6 @@ async def test_complete_retrieval():
         lonmin=12.0029,
         lonmax=12.1989,
     )
-    data = await data_from_extent(extent)
+    data = await raw_data_from_extent(extent)
     # TODO once a data fixture is stable, put a precise number here
     assert len(data) > 1000

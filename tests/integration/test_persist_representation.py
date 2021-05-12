@@ -5,7 +5,7 @@ from shapely.geometry.base import BaseGeometry
 from shapely import affinity
 
 from geoshiny.types import ExtentDegrees, ObjectStyle
-from geoshiny.database_extract import data_from_extent
+from geoshiny.database_extract import raw_data_from_extent
 from geoshiny.draw_helpers import (
     data_to_representation,
     data_to_representation_file,
@@ -84,7 +84,7 @@ async def test_persist_and_retrieve(tmpdir):
         lonmin=12.0029,
         lonmax=12.1989,
     )
-    data = await data_from_extent(extent)
+    data = await raw_data_from_extent(extent)
     target_file = tmpdir.join("representation.jsonl")
     target_file2 = tmpdir.join("representation2.jsonl")
 

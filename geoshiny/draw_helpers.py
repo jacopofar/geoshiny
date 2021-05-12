@@ -2,7 +2,7 @@ from contextlib import contextmanager
 import json
 import logging
 from io import TextIOWrapper
-from typing import Dict, Callable, Iterator, List, Optional, Tuple, Union
+from typing import Dict, Callable, Iterable, List, Optional, Tuple, Union
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
@@ -129,7 +129,7 @@ def _write_file(target_file: Union[str, TextIOWrapper]):
 def data_to_representation(
     data,
     entity_callback: Callable,
-) -> Iterator[Tuple[int, BaseGeometry, dict]]:
+) -> Iterable[Tuple[int, BaseGeometry, dict]]:
     yield from _representation_iterator(data, entity_callback)
 
 
@@ -160,7 +160,7 @@ def file_to_representation(target_file: Union[str, TextIOWrapper]):
 
 
 def representation_to_figure(
-    representations: Iterator[Tuple[int, BaseGeometry, dict]],
+    representations: Iterable[Tuple[int, BaseGeometry, dict]],
     extent: ExtentDegrees,
     representer: Callable[[int, BaseGeometry, dict], Optional[ObjectStyle]],
     figsize: int = 1500,

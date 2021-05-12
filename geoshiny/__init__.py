@@ -7,7 +7,7 @@ from geoshiny.types import (
     ExtentDegrees,
     ObjectStyle,
 )
-from geoshiny.database_extract import data_from_extent
+from geoshiny.database_extract import representation_from_extent
 from geoshiny.draw_helpers import (
     data_to_representation,
     representation_to_figure,
@@ -24,7 +24,6 @@ def generate_chart(
     tables: Optional[List[str]] = None
 ):
     loop = asyncio.get_event_loop()
-    db_data = loop.run_until_complete(data_from_extent(extent, dsn=dsn))
-    reprs = data_to_representation(db_data, entity_callback=representer)
+    reprs = loop.run_until_complete(representation_from_extent(extent, representer, dsn=dsn))
     db_img = representation_to_figure(reprs, extent, renderer, figsize=figsize)
     db_img.savefig(filename)

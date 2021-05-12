@@ -44,6 +44,9 @@ class ExtentDegrees:
     def enlarged(self, factor: float):
         """Calculate an extent enlarged in all directions.
 
+        The factor is RELATIVE, 0 means no change, 1.0 means 100% larger,
+        -0.5 means 50% smaller
+
         Parameters
         ----------
         factor : float
