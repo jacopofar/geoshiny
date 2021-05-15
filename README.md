@@ -1,6 +1,6 @@
 ## Geoshiny
 
-This is a tool to create customized maps using OpenStreetMap data.
+This is a tool to create highly customized maps from a PostGIS instance populated with Openstreetmap data.
 
 __NOTE__: this software is under development, the interface and the functionalities can and probably will change.
 
@@ -29,19 +29,6 @@ The connection string for this database has to be put in the environment variabl
 ## Installation
 
 You will probably need to install the `geos` library on your system, on Ubuntu for example is the package `libgeos-dev`, on macOS using bres it's `geos`.
-
-The default installation does not require GDAL and cannot generate geoTIFF. That functionality is in the `geotiff` extra and you will need the GDAL libraries installed on your computer, the procedure depends on the OS and can be tricky.
-
-Then, requirements.txt dependencies need to be installed, for example with
-
-    python3 -m pip install --no-binary Shapely -r requirements.txt
-
-there are a lot of bugs related to the way GDAL is installed, for example you may need to reinstall it after installing numpy, and avoid using the wheel but let it build (`python3 -m pip install --no-binary GDAL GDAL`).
-
-Also, GDAL seems to need to see the gdal commands when building, or it fails at runtime. So if you are using a virtualenv you'll need to activate it first or alter you PATH if you are in a CI pipeline (check the Makefile for examples).
-
-I still have to find reliable ways to install and import GDAL and Shapely without this [import order problem](https://github.com/OSGeo/gdal/issues/3779), so for now I use only Shapely.
-
 ## Usage
 
 NOTE: this is under development, usage will change soon

@@ -28,8 +28,6 @@ setup(
         "Shapely",
     ],
     extras_require={
-        # generate geoTIFF, manipulate coordinates, heavy requirement so it's optional
-        "geotiff": ["GDAL"],
         "tests": [
             # tests
             "pytest",
