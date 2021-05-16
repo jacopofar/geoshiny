@@ -10,7 +10,7 @@ __NOTE__: this software is under development, the interface and the functionalit
 * Outputs:
   * SVG
   * PNG
-  * many others
+  * ...and many others
 * Store a filtered intermediate representation in JSONL to easily generate images without a database
 
 ![example generated map](example.png)

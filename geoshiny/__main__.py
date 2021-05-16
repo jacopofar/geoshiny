@@ -45,8 +45,8 @@ def nice_representation(osm_id: int, geom, tags: dict) -> Optional[dict]:
 
 def nice_renderer(osm_id: int, shape: BaseGeometry, d: dict):
     water_style = ObjectStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
-    grass_style = ObjectStyle(facecolor="green", linewidth=0.1)
-    wild_grass_style = ObjectStyle(facecolor="darkgreen", linewidth=0.1)
+    grass_style = ObjectStyle(facecolor="green", linewidth=0.1, label=dict(text='grass', color='white'))
+    wild_grass_style = ObjectStyle(facecolor="darkgreen", linewidth=0.1, label=dict(text='wild grass'))
 
     missing_levels = ObjectStyle(facecolor="red", edgecolor="darkred", linewidth=0.05)
     tall_build = ObjectStyle(facecolor="black", edgecolor="black", linewidth=0.05)

@@ -174,18 +174,17 @@ def representation_to_figure(
             continue
 
         new_shape = res.shape if res.shape is not None else geom
-        draw_options = res.get_drawing_options()
         to_draw.append(
             (
                 new_shape,
-                draw_options,
+                res
             )
         )
     return render_shapes_to_figure(extent, to_draw, figsize)
 
 
 def render_shapes_to_figure(
-    extent: ExtentDegrees, to_draw: List[Tuple[BaseGeometry, Dict]], figsize: int = 1500
+    extent: ExtentDegrees, to_draw: List[Tuple[BaseGeometry, ObjectStyle]], figsize: int = 1500
 ) -> Figure:
     """Renders arbitrary Shapely geometrical objects to a Figure.
 
@@ -210,36 +209,46 @@ def render_shapes_to_figure(
     fig.subplots_adjust(right=1)
     fig.subplots_adjust(left=0)
 
-    for geom, options in to_draw:
+    for geom, style in to_draw:
+        draw_options = style.get_drawing_options()
+        label_options = style.get_label_options()
         # the possible types are FeatureCollection, Feature, Point, LineString, MultiPoint,
         # Polygon, MultiLineString, MultiPolygon, and GeometryCollection
         # however I found only these three so far
+        if label_options is not None:
+            x, y = geom.centroid.xy
+            x = x[0]
+            y = y[0]
+            t = label_options['text']
+            label_options.pop('text', None)
+            ax.text(x, y, t, **label_options)
+         
         try:
             if geom.type == "LineString":
                 x, y = geom.xy
-                ax.plot(x, y, **options)
+                ax.plot(x, y, **draw_options)
                 continue
 
             if geom.type == "Polygon":
-                patch = create_polygon_patch(geom, **options)
+                patch = create_polygon_patch(geom, **draw_options)
                 ax.add_patch(patch)
                 continue
 
             if geom.type == "MultiPolygon":
                 for sub_geom in geom.geoms:
-                    patch = create_polygon_patch(sub_geom, **options)
+                    patch = create_polygon_patch(sub_geom, **draw_options)
                     ax.add_patch(patch)
                 continue
 
             if geom.type == "Point":
                 x, y = geom.xy
-                ax.scatter(x, y, **options)
+                ax.scatter(x, y, **draw_options)
                 continue
 
             raise ValueError(f"Cannot draw type {geom.type}")
 
         except AttributeError:
-            logger.exception(f"Error drawing, will skip {geom}, options: {options}")
+            logger.exception(f"Error drawing, will skip {geom}, options: {draw_options}")
 
     return fig
 

@@ -19,17 +19,23 @@ class ObjectStyle:
     color: Optional[str] = None
     alpha: Optional[float] = None
     shape: Optional[BaseGeometry] = None
+    label: Optional[dict] = None
 
     def get_drawing_options(self):
         """Get the option to draw this element."""
         ret = {}
         for field in fields(self):
-            if field.name == "shape":
+            if field.name in ("shape", "label"):
                 continue
             value = getattr(self, field.name)
             if value is not None:
                 ret[field.name] = value
         return ret
+    
+    def get_label_options(self):
+        if self.label is None:
+            return None
+        return self.label
 
 
 @dataclass
