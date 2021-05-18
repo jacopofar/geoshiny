@@ -9,8 +9,8 @@ TRAN_4326_TO_3857 = Transformer.from_crs("EPSG:4326", "EPSG:3857")
 
 
 @dataclass
-class ObjectStyle:
-    """Style for any element on the map"""
+class Geometry2DStyle:
+    """Style for any geometry in a 2D chart."""
 
     facecolor: Optional[str] = None
     edgecolor: Optional[str] = None
@@ -20,18 +20,20 @@ class ObjectStyle:
     alpha: Optional[float] = None
     shape: Optional[BaseGeometry] = None
     label: Optional[dict] = None
+    # if not None, how much area on the toal must a shape have to be drawn
+    min_label_area_ratio: Optional[float] = None
 
     def get_drawing_options(self):
         """Get the option to draw this element."""
         ret = {}
         for field in fields(self):
-            if field.name in ("shape", "label"):
+            if field.name in ("shape", "label", "min_label_area_ratio"):
                 continue
             value = getattr(self, field.name)
             if value is not None:
                 ret[field.name] = value
         return ret
-    
+
     def get_label_options(self):
         if self.label is None:
             return None

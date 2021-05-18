@@ -66,11 +66,12 @@ async def get_connection(dsn: str) -> asyncpg.Connection:
     )
     return conn
 
+
 async def geometry_tables(
     conn,
     tables: Optional[List[str]] = None,
     schema: str = "osm",
-    ) -> List[str]:
+) -> List[str]:
     if tables is None:
         records = await conn.fetch(
             """
@@ -99,11 +100,12 @@ async def geometry_tables(
             raise ValueError(f"Table {full_name} has no known geometry type")
     return geom_tables
 
+
 async def raw_data_from_extent(
     extent: ExtentDegrees,
     schema: str = "osm",
     dsn=None,
-    tables: Optional[List[str]] = None
+    tables: Optional[List[str]] = None,
 ) -> List[asyncpg.Record]:
     if dsn is None:
         dsn = environ["PGIS_CONN_STR"]
@@ -117,12 +119,13 @@ async def raw_data_from_extent(
         ret.append(r)
     return ret
 
+
 async def representation_from_extent(
     extent: ExtentDegrees,
     representer: Callable[[int, BaseGeometry, dict], Optional[dict]],
     schema: str = "osm",
     dsn=None,
-    tables: Optional[List[str]] = None
+    tables: Optional[List[str]] = None,
 ) -> List[Tuple[int, BaseGeometry, dict]]:
     if dsn is None:
         dsn = environ["PGIS_CONN_STR"]
@@ -132,11 +135,14 @@ async def representation_from_extent(
     # TODO return async generators instead?
     # would force the user to use async
     ret = []
-    async for (osm_id, geom, tags) in geoms_in_extent(conn, schema, extent, geom_tables):
+    async for (osm_id, geom, tags) in geoms_in_extent(
+        conn, schema, extent, geom_tables
+    ):
         representation = representer(osm_id, geom, tags)
         if representation is not None:
             ret.append((osm_id, geom, representation))
     return ret
+
 
 async def geoms_in_extent(
     conn: asyncpg.Connection, schema: str, extent: ExtentDegrees, tables: List[str]

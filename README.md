@@ -48,7 +48,7 @@ import asyncio
 from geoshiny.database_extract import raw_data_from_extent
 from geoshiny.types import (
     ExtentDegrees,
-    ObjectStyle,
+    Geometry2DStyle,
 )
 
 from geoshiny.draw_helpers import (
@@ -71,8 +71,8 @@ def representation(osm_id: int, geom, tags: dict) -> Optional[dict]:
     [...]
 
 def renderer(osm_id: int, shape: BaseGeometry, d: dict):
-    water_style = ObjectStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
-    grass_style = ObjectStyle(facecolor="green", linewidth=0.1)
+    water_style = Geometry2DStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
+    grass_style = Geometry2DStyle(facecolor="green", linewidth=0.1)
 
     if d.get("surface_type") == "water":
         return water_style

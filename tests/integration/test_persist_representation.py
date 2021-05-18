@@ -4,7 +4,7 @@ import pytest
 from shapely.geometry.base import BaseGeometry
 from shapely import affinity
 
-from geoshiny.types import ExtentDegrees, ObjectStyle
+from geoshiny.types import ExtentDegrees, Geometry2DStyle
 from geoshiny.database_extract import raw_data_from_extent
 from geoshiny.draw_helpers import (
     data_to_representation,
@@ -42,15 +42,15 @@ def nice_representation(osm_id: int, geom, tags: dict):
 
 
 def nice_renderer(osm_id: int, shape: BaseGeometry, d: dict):
-    water_style = ObjectStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
-    grass_style = ObjectStyle(facecolor="green", linewidth=0.1)
-    wild_grass_style = ObjectStyle(facecolor="darkgreen", linewidth=0.1)
+    water_style = Geometry2DStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
+    grass_style = Geometry2DStyle(facecolor="green", linewidth=0.1)
+    wild_grass_style = Geometry2DStyle(facecolor="darkgreen", linewidth=0.1)
 
-    missing_levels = ObjectStyle(facecolor="red", edgecolor="darkred", linewidth=0.05)
-    tall_build = ObjectStyle(facecolor="black", edgecolor="black", linewidth=0.05)
-    low_build = ObjectStyle(facecolor="grey", edgecolor="darkgrey", linewidth=0.05)
+    missing_levels = Geometry2DStyle(facecolor="red", edgecolor="darkred", linewidth=0.05)
+    tall_build = Geometry2DStyle(facecolor="black", edgecolor="black", linewidth=0.05)
+    low_build = Geometry2DStyle(facecolor="grey", edgecolor="darkgrey", linewidth=0.05)
 
-    bike_path = ObjectStyle(linestyle="dashed", color="yellow", linewidth=0.1)
+    bike_path = Geometry2DStyle(linestyle="dashed", color="yellow", linewidth=0.1)
 
     if d.get("path_type") == "bike":
         return bike_path

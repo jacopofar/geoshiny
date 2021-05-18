@@ -5,7 +5,7 @@ from shapely.geometry.base import BaseGeometry
 
 from geoshiny.types import (
     ExtentDegrees,
-    ObjectStyle,
+    Geometry2DStyle,
 )
 from geoshiny import generate_chart
 
@@ -44,15 +44,30 @@ def nice_representation(osm_id: int, geom, tags: dict) -> Optional[dict]:
 
 
 def nice_renderer(osm_id: int, shape: BaseGeometry, d: dict):
-    water_style = ObjectStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
-    grass_style = ObjectStyle(facecolor="green", linewidth=0.1, label=dict(text='grass', color='white'))
-    wild_grass_style = ObjectStyle(facecolor="darkgreen", linewidth=0.1, label=dict(text='wild grass'))
+    water_style = Geometry2DStyle(facecolor="blue", edgecolor="darkblue", linewidth=0.1)
+    wild_grass_style = Geometry2DStyle(
+        facecolor="green",
+        linewidth=0.1,
+        min_label_area_ratio=0.002,
+        label=dict(
+            text="WILD grass",
+            color="green",
+            ha="center",
+            va="center",
+            bbox={"fc": "0.8", "pad": 0},
+        ),
+    )
+    grass_style = Geometry2DStyle(
+        facecolor="darkgreen", linewidth=0.1, label=dict(text="grass")
+    )
 
-    missing_levels = ObjectStyle(facecolor="red", edgecolor="darkred", linewidth=0.05)
-    tall_build = ObjectStyle(facecolor="black", edgecolor="black", linewidth=0.05)
-    low_build = ObjectStyle(facecolor="grey", edgecolor="darkgrey", linewidth=0.05)
+    missing_levels = Geometry2DStyle(
+        facecolor="red", edgecolor="darkred", linewidth=0.05
+    )
+    tall_build = Geometry2DStyle(facecolor="black", edgecolor="black", linewidth=0.05)
+    low_build = Geometry2DStyle(facecolor="grey", edgecolor="darkgrey", linewidth=0.05)
 
-    bike_path = ObjectStyle(linestyle="dashed", color="yellow", linewidth=0.1)
+    bike_path = Geometry2DStyle(linestyle="dashed", color="yellow", linewidth=0.1)
 
     if d.get("path_type") == "bike":
         return bike_path
@@ -114,7 +129,7 @@ if __name__ == "__main__":
         latmax=54.2046,
         lonmin=12.0029,
         lonmax=12.1989,
-    )
+    ).enlarged(-0.8)
 
     # most of Berlin, takes:
     # 6 minutes to read all the data
@@ -128,5 +143,8 @@ if __name__ == "__main__":
     #     lonmin=13.1180,
     #     lonmax=13.6368,
     # )
-    generate_chart('generated.png', extent, nice_representation, nice_renderer)
+    # import matplotlib.pyplot as plt
+
+    # with plt.xkcd():
+    generate_chart("generated.png", extent, nice_representation, nice_renderer)
     logger.info("done!")

@@ -2,7 +2,7 @@ import json
 
 from shapely.geometry import shape
 
-from geoshiny.types import ExtentDegrees, ObjectStyle
+from geoshiny.types import ExtentDegrees, Geometry2DStyle
 from geoshiny.draw_helpers import render_shapes_to_figure, figure_to_numpy
 
 # Geometry types
@@ -37,9 +37,9 @@ def test_render_polygon(tmpdir):
     fig = render_shapes_to_figure(
         extent,
         [
-            (multipolygon, ObjectStyle(facecolor="#ff0000", edgecolor="black", alpha=0.5)),
-            (multipolygon2, ObjectStyle(facecolor="#00ff00", edgecolor="blue")),
-            (multipolygon3, ObjectStyle(facecolor="yellow", edgecolor="blue")),
+            (multipolygon, Geometry2DStyle(facecolor="#ff0000", edgecolor="black", alpha=0.5)),
+            (multipolygon2, Geometry2DStyle(facecolor="#00ff00", edgecolor="blue")),
+            (multipolygon3, Geometry2DStyle(facecolor="yellow", edgecolor="blue")),
         ],
     )
 

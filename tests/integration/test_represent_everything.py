@@ -4,7 +4,7 @@ from typing import Union
 import pytest
 from shapely.geometry.base import BaseGeometry
 
-from geoshiny.types import ExtentDegrees, ObjectStyle
+from geoshiny.types import ExtentDegrees, Geometry2DStyle
 from geoshiny.database_extract import raw_data_from_extent
 from geoshiny.draw_helpers import (
     data_to_representation,
@@ -20,11 +20,11 @@ def universal_representation(osm_id: int, geom, tags: dict):
 
 def messy_renderer(d: dict, shape: BaseGeometry = None):
     if shape.type == "LineString":
-        return ObjectStyle(color="red", alpha=(1.0 / d["val"]))
+        return Geometry2DStyle(color="red", alpha=(1.0 / d["val"]))
     if shape.type == "Polygon":
-        return ObjectStyle(color="green", alpha=(1.0 / d["val"]))
+        return Geometry2DStyle(color="green", alpha=(1.0 / d["val"]))
     if shape.type == "Point":
-        return ObjectStyle(color="blue", alpha=(1.0 / d["val"]))
+        return Geometry2DStyle(color="blue", alpha=(1.0 / d["val"]))
     raise ValueError(f"Unknown shape type {shape.type}")
 
 

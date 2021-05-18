@@ -13,7 +13,7 @@ from numpy import asarray, concatenate, ones
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import mapping, asShape
 
-from geoshiny.types import ExtentDegrees, ObjectStyle
+from geoshiny.types import ExtentDegrees, Geometry2DStyle
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ def file_to_representation(target_file: Union[str, TextIOWrapper]):
 def representation_to_figure(
     representations: Iterable[Tuple[int, BaseGeometry, dict]],
     extent: ExtentDegrees,
-    representer: Callable[[int, BaseGeometry, dict], Optional[ObjectStyle]],
+    representer: Callable[[int, BaseGeometry, dict], Optional[Geometry2DStyle]],
     figsize: int = 1500,
 ) -> Figure:
 
@@ -174,17 +174,14 @@ def representation_to_figure(
             continue
 
         new_shape = res.shape if res.shape is not None else geom
-        to_draw.append(
-            (
-                new_shape,
-                res
-            )
-        )
+        to_draw.append((new_shape, res))
     return render_shapes_to_figure(extent, to_draw, figsize)
 
 
 def render_shapes_to_figure(
-    extent: ExtentDegrees, to_draw: List[Tuple[BaseGeometry, ObjectStyle]], figsize: int = 1500
+    extent: ExtentDegrees,
+    to_draw: List[Tuple[BaseGeometry, Geometry2DStyle]],
+    figsize: int = 1500,
 ) -> Figure:
     """Renders arbitrary Shapely geometrical objects to a Figure.
 
@@ -198,6 +195,8 @@ def render_shapes_to_figure(
     lonmin, latmin, lonmax, latmax = extent.as_epsg3857()
     ax.set_ylim(latmin, latmax)
     ax.set_xlim(lonmin, lonmax)
+    # the total area, used to compare with geometries areas
+    total_area = (latmax - latmin) * (lonmax - lonmin)
     # the following lines are the result of an ABSURD amount of attempts
     # I really hope one day matplotlib will become more intuitive ;_;
     ax.set_xmargin(0.0)
@@ -216,13 +215,21 @@ def render_shapes_to_figure(
         # Polygon, MultiLineString, MultiPolygon, and GeometryCollection
         # however I found only these three so far
         if label_options is not None:
-            x, y = geom.centroid.xy
-            x = x[0]
-            y = y[0]
-            t = label_options['text']
-            label_options.pop('text', None)
-            ax.text(x, y, t, **label_options)
-         
+            min_label_area_ratio = style.min_label_area_ratio
+            geom_size = geom.area
+            if (
+                min_label_area_ratio is None
+                or geom_size / total_area > min_label_area_ratio
+            ):
+                x, y = geom.centroid.xy
+                x = x[0]
+                y = y[0]
+                ax.text(
+                    x,
+                    y,
+                    label_options["text"],
+                    **{k: v for k, v in label_options.items() if k != "text"},
+                )
         try:
             if geom.type == "LineString":
                 x, y = geom.xy
@@ -248,7 +255,9 @@ def render_shapes_to_figure(
             raise ValueError(f"Cannot draw type {geom.type}")
 
         except AttributeError:
-            logger.exception(f"Error drawing, will skip {geom}, options: {draw_options}")
+            logger.exception(
+                f"Error drawing, will skip {geom}, options: {draw_options}"
+            )
 
     return fig
 
