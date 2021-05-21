@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - GDAL is now removed as a dependency, [the compatibility with Shapely was an issue](https://github.com/OSGeo/gdal/issues/3779)
+- It's possible to add labels to the 2D chart
 
 ## 0.0.3
 ### Changed

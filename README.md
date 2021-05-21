@@ -129,8 +129,8 @@ Use `make test-from-zero` to perform a complete integration test, it will use a 
 
 - [x] "Proper" automated tests with a reasonable data fixture
 - [x] Examine the possibility of removing GDAL or making it optional, it's a pain to install
-- [ ] Add labeling/text
-- [ ] XKCD style output (from matplotlib, should work out of the box)
+- [x] Add labeling/text
+- [x] XKCD style output (from matplotlib, should work out of the box)
 - [ ] layers/pipelines to further process the output
 - [ ] Offer both async and sync access if possible, hiding the loop to sync users
 - [ ] Visual comparison of output images (may require opencv as a test dependency, is it worth it?)
