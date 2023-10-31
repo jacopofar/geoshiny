@@ -1,3 +1,5 @@
+# the .env file with the secrets and config
+.env
 # the DB data folder
 databasedata/
 # notes and reference material

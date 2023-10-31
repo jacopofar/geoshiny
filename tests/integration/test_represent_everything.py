@@ -1,5 +1,4 @@
 import filecmp
-from typing import Union
 
 import pytest
 from shapely.geometry.base import BaseGeometry

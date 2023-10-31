@@ -1,22 +1,22 @@
 # display, and quick troubleshooting
-matplotlib==3.4.2
+matplotlib==3.8.0
 # everything math
-numpy==1.20.3
+numpy==1.26.1
 # database access
-asyncpg==0.22.0
+asyncpg==0.28.0
 # coordinate system conversion
-pyproj==3.0.1
+pyproj==3.6.1
 # geometrical operations, easy GeoJSON parsing
-# NEEDS the no-binary option, see the integration/aaa-* test for more info
-Shapely==1.7.1 --no-binary=Shapely
+# in the past had issue with the wheels
+Shapely==2.0.2
 
 # tests
-pytest==6.2.4
-pytest-asyncio==0.15.1
-pytest-cov==2.12.0
+pytest==7.4.3
+pytest-asyncio==0.22.0
+pytest-cov==4.1.0
 
 # linting
-flake8==3.9.2
+flake8==6.1.0
 
 # type checking
-mypy==0.812
+mypy==1.6.1

@@ -11,7 +11,7 @@ from matplotlib.path import Path
 import numpy as np
 from numpy import asarray, concatenate, ones
 from shapely.geometry.base import BaseGeometry
-from shapely.geometry import mapping, asShape
+from shapely.geometry import mapping, shape
 
 from geoshiny.types import ExtentDegrees, Geometry2DStyle
 
@@ -156,7 +156,7 @@ def file_to_representation(target_file: Union[str, TextIOWrapper]):
     with _read_file(target_file) as fh:
         for line in fh:
             obj = json.loads(line)
-            yield (obj["osm_id"], asShape(obj["geojson"]), obj["representation"])
+            yield (obj["osm_id"], shape(obj["geojson"]), obj["representation"])
 
 
 def representation_to_figure(

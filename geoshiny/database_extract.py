@@ -97,7 +97,7 @@ async def geometry_tables(
         elif t.endswith("polygon"):
             geom_tables.append(t)
         else:
-            raise ValueError(f"Table {full_name} has no known geometry type")
+            logger.warn(f"Table {full_name} has no known geometry type")
     return geom_tables
 
 
