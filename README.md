@@ -1,4 +1,14 @@
+<div style="color:red;">
+
+## Deprecation warning :warn:
+This software is unlikely to be updated, mainly because the approach of relying on matplotlib for rendering proved to be very cumbersome and at the same time not powerful enough for raster effects.
+
+Maybe I'll release a new library with a similar scope but rendering as raster, but don't hold your breath :/
+
+</red>
+
 ## Geoshiny
+
 
 This is a tool to create highly customized maps from a PostGIS instance populated with Openstreetmap data.
 
